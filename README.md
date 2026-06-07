@@ -1,6 +1,6 @@
 # CutFlow
 
-Windows 桌面视频裁剪与转码工具，基于 Flutter 构建。
+Windows 桌面录屏视频裁剪（Cut）与画面裁切（Crop）批量导出工具，基于 Flutter 构建。
 
 ## 功能
 
