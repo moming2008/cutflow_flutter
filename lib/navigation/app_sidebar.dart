@@ -245,7 +245,7 @@ class _SidebarFooter extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
       child: Text(
-        'v1.5.0',
+        'v1.5.1',
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w400,

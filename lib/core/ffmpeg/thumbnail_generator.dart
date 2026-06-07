@@ -118,8 +118,10 @@ class ThumbnailGenerator {
     return results;
   }
 
-  /// 提取原始分辨率帧（PNG 格式）
+  /// 提取原始分辨率帧（JPEG 格式）
   ///
+  /// 使用 input seeking（-ss 在 -i 之前）实现快速跳转，
+  /// 即使大文件也能在秒级完成。
   /// [videoPath] 视频文件路径
   /// [timeMs] 提取帧的时间点（毫秒）
   /// 返回临时文件路径，调用方负责在使用后清理
@@ -146,7 +148,7 @@ class ThumbnailGenerator {
       // 临时文件路径
       final tempPath = path.join(
         Directory.systemTemp.path,
-        'cropframe_${timestamp.replaceAll(':', '')}.png',
+        'cropframe_${timestamp.replaceAll(':', '')}.jpg',
       );
 
       // 查找 FFmpeg
@@ -156,13 +158,14 @@ class ThumbnailGenerator {
         return null;
       }
 
-      // 构建命令：不加 -vf scale=，保持原始分辨率
+      // -ss 放在 -i 之前：input seeking，O(1) 跳转，大文件也能秒级完成
+      // 使用 JPEG 格式：编码快、文件小、解码快
       final args = [
-        '-y',
-        '-i', videoPath,
         '-ss', timestamp,
+        '-i', videoPath,
         '-vframes', '1',
-        '-q:v', '1',
+        '-q:v', '2',
+        '-y',
         tempPath,
       ];
 
