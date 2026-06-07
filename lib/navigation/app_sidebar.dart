@@ -6,6 +6,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../main.dart';
 import '../ui/theme/colors.dart';
 
 /// 侧栏导航项数据
@@ -245,7 +246,7 @@ class _SidebarFooter extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
       child: Text(
-        'v1.5.1',
+        'v$kAppVersion',
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w400,

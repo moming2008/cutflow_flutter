@@ -186,6 +186,30 @@ class QueueViewModel extends StateNotifier<QueueState> {
     await loadTasks();
   }
 
+  /// 移除任务（从队列删除，不进入准备列表）
+  Future<void> removeTask(int id) async {
+    log('Queue').i('Removing task id=$id');
+    await _exportRepo.deleteTask(id);
+    await loadTasks();
+  }
+
+  /// 重置任务：删除旧任务，返回 videoId 用于打开编辑器
+  Future<int?> resetTask(int id) async {
+    final task = state.tasks.where((t) => t.id == id).firstOrNull;
+    if (task == null) return null;
+    log('Queue').i('Resetting task id=$id, videoId=${task.sourceVideoId}');
+    await _exportRepo.deleteTask(id);
+    await loadTasks();
+    return task.sourceVideoId;
+  }
+
+  /// 单独执行某个任务
+  Future<void> startSingleTask(int id) async {
+    log('Queue').i('Starting single task id=$id');
+    await _exportService.startSingle(id);
+    await loadTasks();
+  }
+
   @override
   void dispose() {
     _progressSub?.cancel();

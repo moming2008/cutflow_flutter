@@ -123,7 +123,7 @@ class VideoPreviewPanelState extends State<VideoPreviewPanel> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  TimeFormatter.formatDuration(_currentPositionMs),
+                  TimeFormatter.formatDurationPrecise(_currentPositionMs),
                   style: const TextStyle(
                     fontSize: 13,
                     fontFamily: 'monospace',
@@ -135,7 +135,7 @@ class VideoPreviewPanelState extends State<VideoPreviewPanel> {
                   style: TextStyle(color: Colors.white30, fontSize: 13),
                 ),
                 Text(
-                  TimeFormatter.formatDuration(widget.video.duration),
+                  TimeFormatter.formatDurationPrecise(widget.video.duration),
                   style: const TextStyle(
                     fontSize: 13,
                     fontFamily: 'monospace',

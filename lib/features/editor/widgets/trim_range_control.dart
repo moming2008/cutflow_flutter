@@ -20,6 +20,9 @@ class TrimRangeControl extends StatelessWidget {
   final ValueChanged<int> onTrimStartManualChanged;
   final ValueChanged<int> onTrimEndManualChanged;
   final ValueChanged<double>? onSliderChanged;
+  final double frameRate;
+  final VoidCallback onStepForward;
+  final VoidCallback onStepBackward;
 
   const TrimRangeControl({
     super.key,
@@ -32,6 +35,9 @@ class TrimRangeControl extends StatelessWidget {
     required this.onTrimStartManualChanged,
     required this.onTrimEndManualChanged,
     this.onSliderChanged,
+    required this.frameRate,
+    required this.onStepForward,
+    required this.onStepBackward,
   });
 
   int get _trimDuration {
@@ -87,7 +93,7 @@ class TrimRangeControl extends StatelessWidget {
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
-                TimeFormatter.formatDuration(_trimDuration),
+                TimeFormatter.formatDurationPrecise(_trimDuration),
                 style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
@@ -142,6 +148,41 @@ class TrimRangeControl extends StatelessWidget {
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
+                ),
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 8),
+
+        // 逐帧预览 + 设为末尾
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: onStepBackward,
+                icon: const Icon(Icons.skip_previous, size: 14),
+                label: const Text('逐帧向前'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.textSecondary,
+                  side: const BorderSide(color: AppColors.outline),
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: onStepForward,
+                icon: const Icon(Icons.skip_next, size: 14),
+                label: const Text('逐帧向后'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.textSecondary,
+                  side: const BorderSide(color: AppColors.outline),
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
                 ),
               ),
             ),
@@ -216,7 +257,7 @@ class _RangeSlider extends StatelessWidget {
                     child: Container(
                       height: trackHeight,
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.35),
+                        color: AppColors.primary.withValues(alpha: 0.5),
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -258,7 +299,7 @@ class _RangeSlider extends StatelessWidget {
                       width: 8,
                       height: 8,
                       decoration: BoxDecoration(
-                        color: AppColors.textPrimary,
+                        color: AppColors.primary,
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: AppColors.surface,
@@ -321,7 +362,7 @@ class _TimeInputFieldState extends State<_TimeInputField> {
   void _startEdit() {
     setState(() {
       _isEditing = true;
-      _controller.text = TimeFormatter.formatDuration(widget.timeMs);
+      _controller.text = TimeFormatter.formatDurationPrecise(widget.timeMs);
     });
     Future.microtask(() {
       _focusNode.requestFocus();
@@ -341,28 +382,41 @@ class _TimeInputFieldState extends State<_TimeInputField> {
   }
 
   /// 解析时间码字符串为毫秒
-  /// 支持格式: "MM:SS", "HH:MM:SS", "SS" (纯秒数)
+  /// 支持格式: "SS.mmm", "MM:SS.mmm", "HH:MM:SS.mmm", "SS" (纯秒数)
   int? _parseTimeCode(String input) {
     input = input.trim();
     if (input.isEmpty) return null;
 
-    final parts = input.split(':');
+    // 分离毫秒部分
+    String mainPart = input;
+    int millis = 0;
+    if (input.contains('.')) {
+      final dotParts = input.split('.');
+      mainPart = dotParts[0];
+      final msStr = dotParts.length > 1 ? dotParts[1] : '';
+      if (msStr.length == 1) {
+        millis = int.tryParse(msStr.padRight(3, '0')) ?? 0;
+      } else if (msStr.length == 2) {
+        millis = int.tryParse(msStr.padRight(3, '0')) ?? 0;
+      } else {
+        millis = int.tryParse(msStr.substring(0, 3)) ?? 0;
+      }
+    }
+
+    final parts = mainPart.split(':');
     try {
       if (parts.length == 1) {
-        // 纯秒数
         final seconds = int.parse(parts[0]);
-        return seconds * 1000;
+        return seconds * 1000 + millis;
       } else if (parts.length == 2) {
-        // MM:SS
         final minutes = int.parse(parts[0]);
         final seconds = int.parse(parts[1]);
-        return (minutes * 60 + seconds) * 1000;
+        return (minutes * 60 + seconds) * 1000 + millis;
       } else if (parts.length == 3) {
-        // HH:MM:SS
         final hours = int.parse(parts[0]);
         final minutes = int.parse(parts[1]);
         final seconds = int.parse(parts[2]);
-        return (hours * 3600 + minutes * 60 + seconds) * 1000;
+        return (hours * 3600 + minutes * 60 + seconds) * 1000 + millis;
       }
     } catch (_) {
       return null;
@@ -384,7 +438,7 @@ class _TimeInputFieldState extends State<_TimeInputField> {
         ),
         _isEditing
             ? SizedBox(
-                width: 64,
+                width: 90,
                 height: 26,
                 child: TextField(
                   controller: _controller,
@@ -432,7 +486,7 @@ class _TimeInputFieldState extends State<_TimeInputField> {
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      TimeFormatter.formatDuration(widget.timeMs),
+                      TimeFormatter.formatDurationPrecise(widget.timeMs),
                       style: TextStyle(
                         fontSize: 12,
                         fontFamily: 'monospace',

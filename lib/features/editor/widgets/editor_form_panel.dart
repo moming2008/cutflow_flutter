@@ -39,6 +39,9 @@ class EditorFormPanel extends StatefulWidget {
   final ValueChanged<int> onTrimStartManualChanged;
   final ValueChanged<int> onTrimEndManualChanged;
   final ValueChanged<double>? onSliderChanged;
+  final double frameRate;
+  final VoidCallback onStepForward;
+  final VoidCallback onStepBackward;
   final List<CropPreset> cropPresets;
   final int videoWidth;
   final int videoHeight;
@@ -73,6 +76,9 @@ class EditorFormPanel extends StatefulWidget {
     required this.onTrimStartManualChanged,
     required this.onTrimEndManualChanged,
     this.onSliderChanged,
+    required this.frameRate,
+    required this.onStepForward,
+    required this.onStepBackward,
     required this.cropPresets,
     required this.videoWidth,
     required this.videoHeight,
@@ -230,6 +236,9 @@ class _EditorFormPanelState extends State<EditorFormPanel> {
                   onTrimStartManualChanged: widget.onTrimStartManualChanged,
                   onTrimEndManualChanged: widget.onTrimEndManualChanged,
                   onSliderChanged: widget.onSliderChanged,
+                  frameRate: widget.frameRate,
+                  onStepForward: widget.onStepForward,
+                  onStepBackward: widget.onStepBackward,
                 ),
 
                 if (widget.errors['trim'] != null) ...[

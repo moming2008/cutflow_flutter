@@ -213,6 +213,13 @@ Win32Window::MessageHandler(HWND hwnd,
       }
       return 0;
 
+    case WM_GETMINMAXINFO: {
+      auto info = reinterpret_cast<MINMAXINFO*>(lparam);
+      info->ptMinTrackSize.x = 1280;
+      info->ptMinTrackSize.y = 720;
+      return 0;
+    }
+
     case WM_DWMCOLORIZATIONCOLORCHANGED:
       UpdateTheme(hwnd);
       return 0;

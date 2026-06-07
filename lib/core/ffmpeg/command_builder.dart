@@ -94,9 +94,9 @@ class FfmpegCommandBuilder {
 
     return [
       '-y', // 覆盖输出文件
-      '-i', inputPath,
       '-ss', startTime,
-      '-t', duration.toString(),
+      '-i', inputPath,
+      '-t', formatForFfmpeg(duration),
       '-c', 'copy', // 快速复制，不重新编码
       '-avoid_negative_ts', 'make_zero',
       outputPath,
@@ -117,9 +117,9 @@ class FfmpegCommandBuilder {
 
     return [
       '-y',
-      '-i', inputPath,
       '-ss', startTime,
-      '-t', duration.toString(),
+      '-i', inputPath,
+      '-t', formatForFfmpeg(duration),
       '-vf', cropParams.toFfmpegString(), // 应用裁切滤镜
       '-c:v', 'libx264', // H.264编码
       '-preset', 'fast',

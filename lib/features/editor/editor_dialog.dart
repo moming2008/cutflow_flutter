@@ -80,6 +80,22 @@ class _EditorDialogState extends ConsumerState<EditorDialog> {
     _previewKey.currentState?.seekTo(value.round());
   }
 
+  void _onStepForward() {
+    final video = ref.read(editorProvider(widget.videoId)).video;
+    if (video == null) return;
+    final pos = _previewKey.currentState?.currentPositionMs ?? 0;
+    final frameMs = (1000 / video.frameRate).round();
+    _previewKey.currentState?.seekTo(pos + frameMs);
+  }
+
+  void _onStepBackward() {
+    final video = ref.read(editorProvider(widget.videoId)).video;
+    if (video == null) return;
+    final pos = _previewKey.currentState?.currentPositionMs ?? 0;
+    final frameMs = (1000 / video.frameRate).round();
+    _previewKey.currentState?.seekTo((pos - frameMs).clamp(0, video.duration));
+  }
+
   Future<void> _onOpenCropPanel() async {
     final video = ref.read(editorProvider(widget.videoId)).video;
     if (video == null) return;
@@ -237,6 +253,9 @@ class _EditorDialogState extends ConsumerState<EditorDialog> {
                 .read(editorProvider(widget.videoId).notifier)
                 .setTrimEndManual(ms),
             onSliderChanged: _onSliderChanged,
+            frameRate: state.video?.frameRate ?? 30.0,
+            onStepForward: _onStepForward,
+            onStepBackward: _onStepBackward,
             errors: state.errors,
             isSubmitting: state.isSubmitting,
             onCancel: () => Navigator.pop(context, false),

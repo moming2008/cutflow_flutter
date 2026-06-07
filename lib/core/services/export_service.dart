@@ -224,12 +224,19 @@ class ExportService {
           cropParams: cropParams,
         );
       } else {
-        log('ExportService').d('Building trim-only command (stream copy)');
-        command = FfmpegCommandBuilder.buildTrimOnly(
+        // 无裁切时也使用重编码，确保帧级精度
+        log('ExportService').d('Building trim-only command (re-encode for precision)');
+        command = FfmpegCommandBuilder.buildTrimAndCrop(
           inputPath: video.path,
           outputPath: outputPath,
           startMs: task.trimStartMs,
           endMs: task.trimEndMs,
+          cropParams: CropParams(
+            cropW: video.width,
+            cropH: video.height,
+            offsetX: 0,
+            offsetY: 0,
+          ),
         );
       }
 
@@ -301,6 +308,21 @@ class ExportService {
       ));
       _currentEngine = null;
     }
+  }
+
+  /// 处理单个指定任务
+  Future<void> startSingle(int taskId) async {
+    if (_state == WorkerState.running) return;
+    log('ExportService').i('Starting single task id=$taskId');
+    _state = WorkerState.running;
+    _pauseRequested = false;
+
+    final task = await _exportRepo.getTaskById(taskId);
+    if (task != null) {
+      await _processTask(task);
+    }
+
+    _state = WorkerState.idle;
   }
 
   /// 解析裁切参数：自定义裁切 > 预设裁切 > 无裁切
