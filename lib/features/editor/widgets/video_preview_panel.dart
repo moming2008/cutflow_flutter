@@ -78,6 +78,8 @@ class VideoPreviewPanelState extends State<VideoPreviewPanel> {
 
       // 打开视频文件
       await _player.open(Media(widget.video.path));
+      // 打开后暂停，不自动播放
+      await _player.pause();
       log('VideoPreview').i('Video opened: ${widget.video.name}');
 
       if (mounted) {

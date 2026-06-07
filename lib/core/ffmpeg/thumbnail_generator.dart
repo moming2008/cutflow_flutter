@@ -118,6 +118,73 @@ class ThumbnailGenerator {
     return results;
   }
 
+  /// 提取原始分辨率帧（PNG 格式）
+  ///
+  /// [videoPath] 视频文件路径
+  /// [timeMs] 提取帧的时间点（毫秒）
+  /// 返回临时文件路径，调用方负责在使用后清理
+  static Future<String?> extractFullFrame({
+    required String videoPath,
+    required int timeMs,
+  }) async {
+    try {
+      final file = File(videoPath);
+      if (!await file.exists()) {
+        return null;
+      }
+
+      // 格式化时间为 HH:MM:SS.mmm
+      final hours = timeMs ~/ 3600000;
+      final minutes = (timeMs % 3600000) ~/ 60000;
+      final seconds = (timeMs % 60000) ~/ 1000;
+      final millis = timeMs % 1000;
+      final timestamp = '${hours.toString().padLeft(2, '0')}:'
+          '${minutes.toString().padLeft(2, '0')}:'
+          '${seconds.toString().padLeft(2, '0')}.'
+          '${millis.toString().padLeft(3, '0')}';
+
+      // 临时文件路径
+      final tempPath = path.join(
+        Directory.systemTemp.path,
+        'cropframe_${timestamp.replaceAll(':', '')}.png',
+      );
+
+      // 查找 FFmpeg
+      final ffmpegPath = await _findFfmpegPath();
+      if (ffmpegPath == null) {
+        log().w('FFmpeg not found');
+        return null;
+      }
+
+      // 构建命令：不加 -vf scale=，保持原始分辨率
+      final args = [
+        '-y',
+        '-i', videoPath,
+        '-ss', timestamp,
+        '-vframes', '1',
+        '-q:v', '1',
+        tempPath,
+      ];
+
+      final result = await Process.run(ffmpegPath, args);
+
+      if (result.exitCode != 0) {
+        log().e('FFmpeg extractFullFrame error: ${result.stderr}');
+        return null;
+      }
+
+      final outputFile = File(tempPath);
+      if (await outputFile.exists()) {
+        return tempPath;
+      }
+
+      return null;
+    } catch (e) {
+      log().e('Error extracting full frame: $e');
+      return null;
+    }
+  }
+
   /// 查找FFmpeg可执行文件
   static Future<String?> _findFfmpegPath() async {
     if (Platform.isWindows) {

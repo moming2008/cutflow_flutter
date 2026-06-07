@@ -40,6 +40,7 @@ final editorProvider =
 class EditorState {
   final VideoItem? video;
   final String outputName;
+  final String outputSuffix;
   final int? selectedCropPresetId; // null=原始, -1=自定义
   final int trimStartMs;
   final int trimEndMs;
@@ -56,6 +57,7 @@ class EditorState {
   const EditorState({
     this.video,
     this.outputName = '',
+    this.outputSuffix = '-crop',
     this.selectedCropPresetId,
     this.trimStartMs = 0,
     this.trimEndMs = 0,
@@ -81,9 +83,13 @@ class EditorState {
     return 0;
   }
 
+  /// 完整输出文件名（名称+后缀）
+  String get fullOutputName => '$outputName$outputSuffix';
+
   EditorState copyWith({
     VideoItem? video,
     String? outputName,
+    String? outputSuffix,
     int? selectedCropPresetId,
     int? trimStartMs,
     int? trimEndMs,
@@ -102,6 +108,7 @@ class EditorState {
     return EditorState(
       video: video ?? this.video,
       outputName: outputName ?? this.outputName,
+      outputSuffix: outputSuffix ?? this.outputSuffix,
       selectedCropPresetId: clearCropPreset
           ? null
           : (selectedCropPresetId ?? this.selectedCropPresetId),
@@ -157,15 +164,16 @@ class EditorViewModel extends StateNotifier<EditorState> {
       // 检查是否有已有草稿
       final draft = await _draftRepo.getDraftByVideoId(_videoId);
 
-      // 从文件名去掉扩展名作为默认输出名
+      // 从文件名去掉扩展名，作为默认输出名
       final nameWithoutExt = video.name.replaceAll(
         RegExp(r'\.[^.]+$'),
         '',
       );
+      final defaultOutputName = draft?.outputName ?? nameWithoutExt;
 
       state = state.copyWith(
         video: video,
-        outputName: draft?.outputName ?? nameWithoutExt,
+        outputName: defaultOutputName,
         selectedCropPresetId: draft?.selectedCropPresetId,
         trimStartMs: draft?.trimStartMs ?? 0,
         trimEndMs: draft?.trimEndMs ?? video.duration,
@@ -186,6 +194,12 @@ class EditorViewModel extends StateNotifier<EditorState> {
     _autoSaveDraft();
   }
 
+  /// 设置输出后缀
+  void setOutputSuffix(String suffix) {
+    state = state.copyWith(outputSuffix: suffix, clearErrors: true);
+    _autoSaveDraft();
+  }
+
   /// 选择裁切预设
   void setSelectedCropPreset(int? presetId) {
     if (presetId == null) {
@@ -201,10 +215,11 @@ class EditorViewModel extends StateNotifier<EditorState> {
 
   /// 设置裁切模式 (null=原始, -1=自定义)
   void setCropMode(int? mode) {
-    state = state.copyWith(
-      selectedCropPresetId: mode,
-      clearErrors: true,
-    );
+    if (mode == null) {
+      state = state.copyWith(clearCropPreset: true, clearErrors: true);
+    } else {
+      state = state.copyWith(selectedCropPresetId: mode, clearErrors: true);
+    }
     _autoSaveDraft();
   }
 
@@ -253,6 +268,28 @@ class EditorViewModel extends StateNotifier<EditorState> {
     _autoSaveDraft();
   }
 
+  /// 保存裁切预设到数据库，返回新预设的 ID
+  Future<int> saveCropPreset(String name, int w, int h, int x, int y) async {
+    final preset = CropPreset(
+      id: 0,
+      name: name,
+      ratioLabel: '',
+      ratioW: 0,
+      ratioH: 0,
+      outputW: w,
+      outputH: h,
+      offsetX: x,
+      offsetY: y,
+      isBuiltin: false,
+      sortOrder: DateTime.now().millisecondsSinceEpoch,
+    );
+    final newId = await _presetRepo.insertPreset(preset);
+    final presets = await _presetRepo.getAllPresets();
+    state = state.copyWith(presets: presets);
+    log('Editor').i('Crop preset saved: $name (${w}x$h+$x+$y) id=$newId');
+    return newId;
+  }
+
   /// 防抖 500ms 自动保存草稿
   void _autoSaveDraft() {
     _debounceTimer?.cancel();
@@ -286,7 +323,7 @@ class EditorViewModel extends StateNotifier<EditorState> {
   bool validate() {
     final errors = <String, String>{};
 
-    if (state.outputName.trim().isEmpty) {
+    if (state.outputName.trim().isEmpty && state.outputSuffix.trim().isEmpty) {
       errors['outputName'] = '请输入输出文件名';
     }
 
@@ -340,7 +377,7 @@ class EditorViewModel extends StateNotifier<EditorState> {
       final task = ExportTask(
         id: 0,
         sourceVideoId: video.id,
-        outputName: state.outputName.trim(),
+        outputName: state.fullOutputName.trim(),
         trimStartMs: state.trimStartMs,
         trimEndMs: state.trimEndMs,
         cropPresetId: state.selectedCropPresetId == kCustomCropSentinel
@@ -363,7 +400,7 @@ class EditorViewModel extends StateNotifier<EditorState> {
       // 通知队列页面有新任务
       ExportService.notifyTaskInserted();
 
-      log('Editor').i('Task created: "${state.outputName}" (trim=${state.trimStartMs}-${state.trimEndMs}ms, crop=${state.selectedCropPresetId ?? "none"})');
+      log('Editor').i('Task created: "${state.fullOutputName}" (trim=${state.trimStartMs}-${state.trimEndMs}ms, crop=${state.selectedCropPresetId ?? "none"})');
       state = state.copyWith(isSubmitting: false);
       return true;
     } catch (e) {

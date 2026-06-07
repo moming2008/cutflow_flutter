@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'editor_viewmodel.dart';
 import 'widgets/video_preview_panel.dart';
 import 'widgets/editor_form_panel.dart';
+import 'widgets/crop_panel_dialog.dart';
 import '../../ui/theme/colors.dart';
 
 class EditorDialog extends ConsumerStatefulWidget {
@@ -79,6 +80,47 @@ class _EditorDialogState extends ConsumerState<EditorDialog> {
     _previewKey.currentState?.seekTo(value.round());
   }
 
+  Future<void> _onOpenCropPanel() async {
+    final video = ref.read(editorProvider(widget.videoId)).video;
+    if (video == null) return;
+
+    final currentPositionMs =
+        _previewKey.currentState?.currentPositionMs ?? 0;
+
+    final result = await CropPanelDialog.show(
+      context,
+      videoPath: video.path,
+      currentPositionMs: currentPositionMs,
+      videoWidth: video.width,
+      videoHeight: video.height,
+    );
+
+    if (result != null && mounted) {
+      final notifier = ref.read(editorProvider(widget.videoId).notifier);
+      // 回填裁切参数
+      notifier.setCustomCrop(
+        w: result.cropW,
+        h: result.cropH,
+        x: result.offsetX,
+        y: result.offsetY,
+      );
+      // 保存预设并切换到新预设
+      if (result.presetName != null) {
+        final newPresetId = await notifier.saveCropPreset(
+          result.presetName!,
+          result.cropW,
+          result.cropH,
+          result.offsetX,
+          result.offsetY,
+        );
+        notifier.setCropMode(newPresetId);
+      } else {
+        // 仅本次 → 停留在自定义模式
+        notifier.setCropMode(kCustomCropSentinel);
+      }
+    }
+  }
+
   Future<void> _onSubmit() async {
     final notifier = ref.read(editorProvider(widget.videoId).notifier);
     final success = await notifier.submit();
@@ -146,18 +188,25 @@ class _EditorDialogState extends ConsumerState<EditorDialog> {
           flex: 5,
           child: EditorFormPanel(
             outputName: state.outputName,
+            outputSuffix: state.outputSuffix,
             onOutputNameChanged: (name) {
               ref
                   .read(editorProvider(widget.videoId).notifier)
                   .setOutputName(name);
             },
+            onOutputSuffixChanged: (suffix) {
+              ref
+                  .read(editorProvider(widget.videoId).notifier)
+                  .setOutputSuffix(suffix);
+            },
             selectedCropPresetId: state.selectedCropPresetId,
+            videoWidth: state.video?.width ?? 0,
+            videoHeight: state.video?.height ?? 0,
             onCropModeChanged: (mode) {
               ref
                   .read(editorProvider(widget.videoId).notifier)
                   .setCropMode(mode);
             },
-            cropPresets: state.presets,
             customCropW: state.customCropW,
             customCropH: state.customCropH,
             customCropX: state.customCropX,
@@ -174,6 +223,7 @@ class _EditorDialogState extends ConsumerState<EditorDialog> {
             onCustomCropYChanged: (v) => ref
                 .read(editorProvider(widget.videoId).notifier)
                 .setCustomCrop(y: v),
+            cropPresets: state.presets,
             durationMs: state.durationMs,
             trimStartMs: state.trimStartMs,
             trimEndMs: state.trimEndMs,
@@ -191,6 +241,7 @@ class _EditorDialogState extends ConsumerState<EditorDialog> {
             isSubmitting: state.isSubmitting,
             onCancel: () => Navigator.pop(context, false),
             onSubmit: _onSubmit,
+            onOpenCropPanel: _onOpenCropPanel,
           ),
         ),
       ],
