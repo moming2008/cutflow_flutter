@@ -23,30 +23,30 @@ Windows 桌面录屏视频裁剪（Cut）与画面裁切（Crop）批量导出�
     <td align="center"><b>编辑器</b></td>
   </tr>
   <tr>
-    <td><img src="" alt="准备列表" /></td>
-    <td><img src="" alt="编辑器" /></td>
+    <td><img src="https://private-user-images.githubusercontent.com/11555380/604067898-98d83d7e-bcc7-4c69-aeb1-b4e373082695.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3ODA4MzkyNzIsIm5iZiI6MTc4MDgzODk3MiwicGF0aCI6Ii8xMTU1NTM4MC82MDQwNjc4OTgtOThkODNkN2UtYmNjNy00YzY5LWFlYjEtYjRlMzczMDgyNjk1LnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNjA2MDclMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjYwNjA3VDEzMjkzMlomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTA0OGU1YWI0MTIwOWQ3YTU1OGNiZGIyN2MzZmMyYmQzMjFlNTdiZjZhYWJmYzY0YzY4ZDllZGYwYWYxMzUyMzEmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JnJlc3BvbnNlLWNvbnRlbnQtdHlwZT1pbWFnZSUyRnBuZyJ9.tVoSpcqoEhZse7FNy3Ii4VJzJFWwQCOvr8mRc1tEsVc" alt="准备列表" /></td>
+    <td><img src="https://private-user-images.githubusercontent.com/11555380/604067899-a66f56e0-08b0-459e-8d17-7fd38f89c499.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3ODA4MzkzOTEsIm5iZiI6MTc4MDgzOTA5MSwicGF0aCI6Ii8xMTU1NTM4MC82MDQwNjc4OTktYTY2ZjU2ZTAtMDhiMC00NTllLThkMTctN2ZkMzhmODljNDk5LnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNjA2MDclMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjYwNjA3VDEzMzEzMVomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTM4YjQyODQwNmJiMDk0MjE1YzJmYzgyZTg1MTQ4MmM3MWQ5Zjc4ZWVmYjRmNmY5MTRlYmQyNjJjM2ZiY2VjNzImWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JnJlc3BvbnNlLWNvbnRlbnQtdHlwZT1pbWFnZSUyRnBuZyJ9.K86bNI267EZW-eQlmvzHnHAbMo3S-4xi39SB-nkegQs" alt="编辑器" /></td>
   </tr>
   <tr>
     <td align="center"><b>可视化裁切</b></td>
     <td align="center"><b>待转码队列</b></td>
   </tr>
   <tr>
-    <td><img src="" alt="可视化裁切" /></td>
-    <td><img src="" alt="待转码队列" /></td>
+    <td><img src="https://private-user-images.githubusercontent.com/11555380/604067897-b0b9af22-9c33-4d65-a880-0484430ba756.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3ODA4MzkzOTEsIm5iZiI6MTc4MDgzOTA5MSwicGF0aCI6Ii8xMTU1NTM4MC82MDQwNjc4OTctYjBiOWFmMjItOWMzMy00ZDY1LWE4ODAtMDQ4NDQzMGJhNzU2LnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNjA2MDclMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjYwNjA3VDEzMzEzMVomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTc0ZjY3MjJkNGVmM2ViZjQyMTk5NDQwNzEyOWRjZjYxMTE5ZTZlYTRkYTRiOWUwNjgwZTM2YmQ4NjdmMmM4ODEmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JnJlc3BvbnNlLWNvbnRlbnQtdHlwZT1pbWFnZSUyRnBuZyJ9.HNwW_i0Be29NatpvK4LO3p5EJ-bIKZNS5XEddkaAVBM" alt="可视化裁切" /></td>
+    <td><img src="https://private-user-images.githubusercontent.com/11555380/604067902-c7d68e23-a2d5-484e-8780-779832e50762.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3ODA4MzkzOTEsIm5iZiI6MTc4MDgzOTA5MSwicGF0aCI6Ii8xMTU1NTM4MC82MDQwNjc5MDItYzdkNjhlMjMtYTJkNS00ODRlLTg3ODAtNzc5ODMyZTUwNzYyLnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNjA2MDclMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjYwNjA3VDEzMzEzMVomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTgyYWUxZDg3NTU4YmUzZWRiM2U1NDQ0NjRjZjExMjVkZTVlNTc1MzU3ODliMGQ3MzE1ZGJhODZjYTFkZWVlYmImWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JnJlc3BvbnNlLWNvbnRlbnQtdHlwZT1pbWFnZSUyRnBuZyJ9.YPYagIBtTSCJDV0TM9OKEo_uLvueIo5kE-rbxA2ODdU" alt="待转码队列" /></td>
   </tr>
   <tr>
     <td align="center"><b>已转码队列</b></td>
     <td align="center"><b>设置</b></td>
   </tr>
   <tr>
-    <td><img src="" alt="已转码队列" /></td>
-    <td><img src="" alt="设置" /></td>
+    <td><img src="https://private-user-images.githubusercontent.com/11555380/604067900-1d3014b4-5094-46d8-a1ac-89915f2ecd08.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3ODA4MzkzOTEsIm5iZiI6MTc4MDgzOTA5MSwicGF0aCI6Ii8xMTU1NTM4MC82MDQwNjc5MDAtMWQzMDE0YjQtNTA5NC00NmQ4LWExYWMtODk5MTVmMmVjZDA4LnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNjA2MDclMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjYwNjA3VDEzMzEzMVomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTExYzU4Y2E0YzRjM2VlMjc1NmNkNTI3ZmUyMzMwZDgyM2FkMzMxNWJiN2VkZTZlOGYyN2ZkYjAwYmZkZTUwZTUmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JnJlc3BvbnNlLWNvbnRlbnQtdHlwZT1pbWFnZSUyRnBuZyJ9.t0wQ99l_zBmmSK0ifql4JeoxgTl6twDtD7izGva1WtA" alt="已转码队列" /></td>
+    <td><img src="https://private-user-images.githubusercontent.com/11555380/604067904-7b842560-0ac8-4503-bb02-249adf70acfa.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3ODA4MzkzOTEsIm5iZiI6MTc4MDgzOTA5MSwicGF0aCI6Ii8xMTU1NTM4MC82MDQwNjc5MDQtN2I4NDI1NjAtMGFjOC00NTAzLWJiMDItMjQ5YWRmNzBhY2ZhLnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNjA2MDclMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjYwNjA3VDEzMzEzMVomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTE1OTJjOTJkY2M5NTI3ZDc0M2FlODM2ZTBkZGQwODQ2ZDAxODNlZjg4OGRiNWRhYzgwZDE0MGRiNGEzMjFhMTQmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JnJlc3BvbnNlLWNvbnRlbnQtdHlwZT1pbWFnZSUyRnBuZyJ9.8cV4HGxJjeYyJ2NcQ2TwjLiUA1yKbsyquTPqXSnlrUo" alt="设置" /></td>
   </tr>
   <tr>
     <td align="center" colspan="2"><b>添加预设</b></td>
   </tr>
   <tr>
-    <td colspan="2" align="center"><img src="" alt="添加预设" /></td>
+    <td colspan="2" align="center"><img src="https://private-user-images.githubusercontent.com/11555380/604067903-a26a5772-2ca0-476f-8d04-47ae6577cf67.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3ODA4MzkzOTEsIm5iZiI6MTc4MDgzOTA5MSwicGF0aCI6Ii8xMTU1NTM4MC82MDQwNjc5MDMtYTI2YTU3NzItMmNhMC00NzZmLThkMDQtNDdhZTY1NzdjZjY3LnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNjA2MDclMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjYwNjA3VDEzMzEzMVomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPWMwZjNhYWYxMjk4ZTU1Yjk4MGQwNzRmMzUzOWEzMDI4MmRmOTI2MjYwZDQzMDc1MDllY2JiZDljNTA5NjdlZGImWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JnJlc3BvbnNlLWNvbnRlbnQtdHlwZT1pbWFnZSUyRnBuZyJ9.e5IPyTEaPCF9VNnKT8LeG0i4f6-EA8YEnl3miXxyzgM" alt="添加预设" /></td>
   </tr>
 </table>
 
