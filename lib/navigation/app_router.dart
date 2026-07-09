@@ -15,6 +15,7 @@ import '../features/preparation/preparation_screen.dart';
 import '../features/queue/queue_screen.dart';
 import '../features/completed/completed_screen.dart';
 import '../features/settings/settings_screen.dart';
+import '../features/transcode/transcode_screen.dart';
 
 final GoRouter appRouter = GoRouter(
   initialLocation: '/preparation',
@@ -55,6 +56,15 @@ final GoRouter appRouter = GoRouter(
             GoRoute(
               path: '/settings',
               builder: (context, state) => const SettingsScreen(),
+            ),
+          ],
+        ),
+        // 视频转码
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/transcode',
+              builder: (context, state) => const TranscodeScreen(),
             ),
           ],
         ),

@@ -43,6 +43,11 @@ const _navItems = [
     icon: Icons.settings_outlined,
     iconFilled: Icons.settings,
   ),
+  _NavItem(
+    label: '视频转码',
+    icon: Icons.swap_horiz_outlined,
+    iconFilled: Icons.swap_horiz,
+  ),
 ];
 
 /// 侧栏 + 内容的整体布局容器

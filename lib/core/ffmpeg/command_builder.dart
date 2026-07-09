@@ -151,4 +151,26 @@ class FfmpegCommandBuilder {
       outputPath,
     ];
   }
+
+  /// 构建 HVC1 到 H264 的转码命令
+  /// 
+  /// 纯转码，不裁剪时间，不裁切画面
+  /// 使用 H.264 编码，保持原始分辨率和帧率
+  static List<String> buildTranscodeH264({
+    required String inputPath,
+    required String outputPath,
+  }) {
+    log('CmdBuilder').d('buildTranscodeH264: input=$inputPath, output=$outputPath');
+    return [
+      '-y',
+      '-i', inputPath,
+      '-c:v', 'libx264', // H.264 编码
+      '-preset', 'fast', // 快速编码
+      '-crf', '23', // 质量因子
+      '-c:a', 'aac', // 音频编码
+      '-b:a', '128k', // 音频比特率
+      '-movflags', '+faststart', // 快速启动
+      outputPath,
+    ];
+  }
 }

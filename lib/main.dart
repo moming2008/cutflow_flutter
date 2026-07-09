@@ -8,7 +8,7 @@ import 'navigation/app_router.dart';
 import 'ui/theme/theme.dart';
 
 /// 应用版本号，与 pubspec.yaml 保持同步
-const String kAppVersion = '1.6.0';
+const String kAppVersion = '1.6.2';
 
 late AppDatabase database;
 
