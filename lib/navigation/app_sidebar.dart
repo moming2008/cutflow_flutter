@@ -1,7 +1,7 @@
 /// 应用侧栏导航组件
 ///
 /// 深色 Slate 900 侧栏，包含 4 个导航目标：
-/// 准备列表、转码队列、已转码列表、设置
+/// 裁剪、H264 转码、视频分割、设置
 library;
 
 import 'package:flutter/material.dart';
@@ -24,29 +24,24 @@ class _NavItem {
 
 const _navItems = [
   _NavItem(
-    label: '准备列表',
-    icon: Icons.video_library_outlined,
-    iconFilled: Icons.video_library,
+    label: '裁剪',
+    icon: Icons.content_cut_outlined,
+    iconFilled: Icons.content_cut,
   ),
   _NavItem(
-    label: '转码队列',
-    icon: Icons.queue_outlined,
-    iconFilled: Icons.queue,
+    label: 'H264 转码',
+    icon: Icons.swap_horiz_outlined,
+    iconFilled: Icons.swap_horiz,
   ),
   _NavItem(
-    label: '已转码',
-    icon: Icons.check_circle_outline,
-    iconFilled: Icons.check_circle,
+    label: '视频分割',
+    icon: Icons.call_split_outlined,
+    iconFilled: Icons.call_split,
   ),
   _NavItem(
     label: '设置',
     icon: Icons.settings_outlined,
     iconFilled: Icons.settings,
-  ),
-  _NavItem(
-    label: '视频转码',
-    icon: Icons.swap_horiz_outlined,
-    iconFilled: Icons.swap_horiz,
   ),
 ];
 

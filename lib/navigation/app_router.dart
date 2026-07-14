@@ -1,9 +1,9 @@
 /// 应用路由配置
 ///
 /// 使用 StatefulShellRoute.indexedStack 管理 4 个标签页：
-/// - /preparation: 准备列表
-/// - /queue: 待转码队列
-/// - /completed: 已转码列表
+/// - /clip: 裁剪工作流（准备 / 队列 / 已转码 合并）
+/// - /transcode: H264 转码
+/// - /split: 视频分割（占位）
 /// - /settings: 设置
 ///
 /// 编辑器以 showDialog() 弹窗形式打开，不作为路由存在。
@@ -11,42 +11,41 @@ library;
 
 import 'package:go_router/go_router.dart';
 import 'app_sidebar.dart';
-import '../features/preparation/preparation_screen.dart';
-import '../features/queue/queue_screen.dart';
-import '../features/completed/completed_screen.dart';
-import '../features/settings/settings_screen.dart';
+import '../features/clip/clip_screen.dart';
 import '../features/transcode/transcode_screen.dart';
+import '../features/split/split_screen.dart';
+import '../features/settings/settings_screen.dart';
 
 final GoRouter appRouter = GoRouter(
-  initialLocation: '/preparation',
+  initialLocation: '/clip',
   routes: [
     StatefulShellRoute.indexedStack(
       builder: (context, state, shell) => AppSidebar(shell: shell),
       branches: [
-        // 准备列表
+        // 裁剪工作流
         StatefulShellBranch(
           routes: [
             GoRoute(
-              path: '/preparation',
-              builder: (context, state) => const PreparationScreen(),
+              path: '/clip',
+              builder: (context, state) => const ClipScreen(),
             ),
           ],
         ),
-        // 待转码队列
+        // H264 转码
         StatefulShellBranch(
           routes: [
             GoRoute(
-              path: '/queue',
-              builder: (context, state) => const QueueScreen(),
+              path: '/transcode',
+              builder: (context, state) => const TranscodeScreen(),
             ),
           ],
         ),
-        // 已转码列表
+        // 视频分割
         StatefulShellBranch(
           routes: [
             GoRoute(
-              path: '/completed',
-              builder: (context, state) => const CompletedScreen(),
+              path: '/split',
+              builder: (context, state) => const SplitScreen(),
             ),
           ],
         ),
@@ -56,15 +55,6 @@ final GoRouter appRouter = GoRouter(
             GoRoute(
               path: '/settings',
               builder: (context, state) => const SettingsScreen(),
-            ),
-          ],
-        ),
-        // 视频转码
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: '/transcode',
-              builder: (context, state) => const TranscodeScreen(),
             ),
           ],
         ),

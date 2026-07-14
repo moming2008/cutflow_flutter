@@ -1,56 +1,31 @@
-/// 准备列表页面
+/// 准备阶段面板
 ///
 /// 显示尚未配置 ExportTask 的视频。
-/// 点击视频打开编辑器弹窗，
-/// 支持导入视频和删除视频操作。
+/// 点击视频打开编辑器弹窗，支持删除视频操作。
+/// 导入动作由外层裁剪容器提供。
 library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:file_picker/file_picker.dart';
 import 'preparation_viewmodel.dart';
 import 'widgets/preparation_video_card.dart';
 import '../editor/editor_dialog.dart';
 import '../../ui/theme/colors.dart';
 
-class PreparationScreen extends ConsumerStatefulWidget {
-  const PreparationScreen({super.key});
+class PreparationPanel extends ConsumerStatefulWidget {
+  const PreparationPanel({super.key});
 
   @override
-  ConsumerState<PreparationScreen> createState() => _PreparationScreenState();
+  ConsumerState<PreparationPanel> createState() => _PreparationPanelState();
 }
 
-class _PreparationScreenState extends ConsumerState<PreparationScreen> {
+class _PreparationPanelState extends ConsumerState<PreparationPanel> {
   @override
   void initState() {
     super.initState();
     Future.microtask(() {
       ref.read(preparationProvider.notifier).loadVideos();
     });
-  }
-
-  /// 导入视频文件
-  Future<void> _importVideo() async {
-    try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.video,
-        allowMultiple: true,
-      );
-
-      if (result != null && result.files.isNotEmpty) {
-        for (final file in result.files) {
-          if (file.path != null) {
-            await ref.read(preparationProvider.notifier).importVideo(file.path!);
-          }
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('导入失败: $e')),
-        );
-      }
-    }
   }
 
   /// 显示删除确认对话框
@@ -85,36 +60,16 @@ class _PreparationScreenState extends ConsumerState<PreparationScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(preparationProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          '准备列表',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        actions: [
-          TextButton.icon(
-            onPressed: _importVideo,
-            icon: const Icon(Icons.add, size: 18),
-            label: const Text('导入视频'),
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.primary,
-            ),
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : state.error != null
-              ? _buildError(state.error!)
-              : state.videos.isEmpty
-                  ? _buildEmpty()
-                  : _buildList(state),
-    );
+    if (state.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (state.error != null) {
+      return _buildError(state.error!);
+    }
+    if (state.videos.isEmpty) {
+      return _buildEmpty();
+    }
+    return _buildList(state);
   }
 
   Widget _buildEmpty() {
@@ -138,7 +93,7 @@ class _PreparationScreenState extends ConsumerState<PreparationScreen> {
           ),
           const SizedBox(height: 4),
           const Text(
-            '点击「导入视频」按钮添加视频文件',
+            '点击右上角「导入视频」按钮添加视频文件',
             style: TextStyle(
               fontSize: 12,
               color: AppColors.textSecondary,

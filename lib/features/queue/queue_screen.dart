@@ -1,4 +1,4 @@
-/// 待转码队列页面
+/// 待转码队列面板
 ///
 /// 显示队列中的任务列表，提供开始/暂停/重置操作，
 /// 底部显示总进度和统计信息。
@@ -17,14 +17,14 @@ import '../../core/model/export_task.dart';
 import '../../core/services/export_service.dart';
 import '../../ui/theme/colors.dart';
 
-class QueueScreen extends ConsumerStatefulWidget {
-  const QueueScreen({super.key});
+class QueuePanel extends ConsumerStatefulWidget {
+  const QueuePanel({super.key});
 
   @override
-  ConsumerState<QueueScreen> createState() => _QueueScreenState();
+  ConsumerState<QueuePanel> createState() => _QueuePanelState();
 }
 
-class _QueueScreenState extends ConsumerState<QueueScreen> {
+class _QueuePanelState extends ConsumerState<QueuePanel> {
   int? _selectedTaskId;
 
   @override
@@ -39,110 +39,100 @@ class _QueueScreenState extends ConsumerState<QueueScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(queueProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          '待转码队列',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+    if (state.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return Row(
+      children: [
+        // 左侧主内容
+        Expanded(
+          child: Column(
+            children: [
+              QueueToolbar(
+                workerState: state.workerState,
+                hasFailed: state.failedCount > 0,
+                onStart: () =>
+                    ref.read(queueProvider.notifier).startProcessing(),
+                onPause: () =>
+                    ref.read(queueProvider.notifier).pauseProcessing(),
+                onResetFailed: () =>
+                    ref.read(queueProvider.notifier).resetFailed(),
+              ),
+
+              Expanded(
+                child: state.tasks.isEmpty
+                    ? _buildEmpty()
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        itemCount: state.tasks.length,
+                        itemBuilder: (context, index) {
+                          final task = state.tasks[index];
+                          return TaskCard(
+                            task: task,
+                            currentProgress:
+                                state.taskProgress[task.id] ?? task.progress,
+                            currentError: state.taskErrors[task.id] ??
+                                task.errorMessage,
+                            isSelected: _selectedTaskId == task.id,
+                            onTap: () =>
+                                setState(() => _selectedTaskId = task.id),
+                            onDelete: () => ref
+                                .read(queueProvider.notifier)
+                                .deleteTask(task.id),
+                            onRemove: () =>
+                                _confirmRemove(context, task.id),
+                            onReset: () =>
+                                _resetTask(context, task.id),
+                            onStartSingle: state.workerState == WorkerState.idle &&
+                                task.status == TaskStatus.pending
+                            ? () => ref
+                                .read(queueProvider.notifier)
+                                .startSingleTask(task.id)
+                            : null,
+                            canStartSingle:
+                                state.workerState == WorkerState.idle &&
+                                task.status == TaskStatus.pending,
+                          );
+                        },
+                      ),
+              ),
+
+              if (state.tasks.isNotEmpty)
+                QueueStatusBar(
+                  totalProgress: state.totalProgress,
+                  totalCount: state.tasks.length,
+                  completedCount: state.completedCount,
+                  failedCount: state.failedCount,
+                ),
+            ],
           ),
         ),
-      ),
-      body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Row(
-              children: [
-                // 左侧主内容
-                Expanded(
-                  child: Column(
-                    children: [
-                      QueueToolbar(
-                        workerState: state.workerState,
-                        hasFailed: state.failedCount > 0,
-                        onStart: () =>
-                            ref.read(queueProvider.notifier).startProcessing(),
-                        onPause: () =>
-                            ref.read(queueProvider.notifier).pauseProcessing(),
-                        onResetFailed: () =>
-                            ref.read(queueProvider.notifier).resetFailed(),
-                      ),
 
-                      Expanded(
-                        child: state.tasks.isEmpty
-                            ? _buildEmpty()
-                            : ListView.builder(
-                                padding: const EdgeInsets.symmetric(vertical: 8),
-                                itemCount: state.tasks.length,
-                                itemBuilder: (context, index) {
-                                  final task = state.tasks[index];
-                                  return TaskCard(
-                                    task: task,
-                                    currentProgress:
-                                        state.taskProgress[task.id] ?? task.progress,
-                                    currentError: state.taskErrors[task.id] ??
-                                        task.errorMessage,
-                                    isSelected: _selectedTaskId == task.id,
-                                    onTap: () =>
-                                        setState(() => _selectedTaskId = task.id),
-                                    onDelete: () => ref
-                                        .read(queueProvider.notifier)
-                                        .deleteTask(task.id),
-                                    onRemove: () =>
-                                        _confirmRemove(context, task.id),
-                                    onReset: () =>
-                                        _resetTask(context, task.id),
-                                    onStartSingle: state.workerState == WorkerState.idle &&
-                                        task.status == TaskStatus.pending
-                                    ? () => ref
-                                        .read(queueProvider.notifier)
-                                        .startSingleTask(task.id)
-                                    : null,
-                                    canStartSingle:
-                                        state.workerState == WorkerState.idle &&
-                                        task.status == TaskStatus.pending,
-                                  );
-                                },
-                              ),
-                      ),
-
-                      if (state.tasks.isNotEmpty)
-                        QueueStatusBar(
-                          totalProgress: state.totalProgress,
-                          totalCount: state.tasks.length,
-                          completedCount: state.completedCount,
-                          failedCount: state.failedCount,
-                        ),
-                    ],
-                  ),
-                ),
-
-                // 右侧详情抽屉
-                if (_selectedTaskId != null)
-                  Builder(builder: (context) {
-                    final task = state.tasks
-                        .where((t) => t.id == _selectedTaskId)
-                        .firstOrNull;
-                    if (task == null) {
-                      // 任务已不存在，关闭抽屉
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        if (mounted) setState(() => _selectedTaskId = null);
-                      });
-                      return const SizedBox.shrink();
-                    }
-                    return TaskDetailDrawer(
-                      task: task,
-                      currentProgress:
-                          state.taskProgress[task.id] ?? task.progress,
-                      currentError:
-                          state.taskErrors[task.id] ?? task.errorMessage,
-                      onClose: () =>
-                          setState(() => _selectedTaskId = null),
-                    );
-                  }),
-              ],
-            ),
+        // 右侧详情抽屉
+        if (_selectedTaskId != null)
+          Builder(builder: (context) {
+            final task = state.tasks
+                .where((t) => t.id == _selectedTaskId)
+                .firstOrNull;
+            if (task == null) {
+              // 任务已不存在，关闭抽屉
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) setState(() => _selectedTaskId = null);
+              });
+              return const SizedBox.shrink();
+            }
+            return TaskDetailDrawer(
+              task: task,
+              currentProgress:
+                  state.taskProgress[task.id] ?? task.progress,
+              currentError:
+                  state.taskErrors[task.id] ?? task.errorMessage,
+              onClose: () =>
+                  setState(() => _selectedTaskId = null),
+            );
+          }),
+      ],
     );
   }
 
@@ -208,7 +198,7 @@ class _QueueScreenState extends ConsumerState<QueueScreen> {
           ),
           const SizedBox(height: 4),
           const Text(
-            '在准备列表中编辑视频后，任务会出现在这里',
+            '在准备阶段编辑视频后，任务会出现在这里',
             style: TextStyle(
               fontSize: 12,
               color: AppColors.textSecondary,
