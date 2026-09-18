@@ -86,8 +86,11 @@ dev_dependencies:
   flutter_lints: ^5.0.0
   
   # 代码生成
+  # 注意：本项目未使用 riverpod 代码生成（lib/ 下无任何 @riverpod 注解，
+  # provider 全部手写）。riverpod_generator 已移除——它会把 analyzer 钉在
+  # 7.6.0，而该版本不支持 Dart 3.10+ 的 AST 节点，导致 drift_dev 在 Dart
+  # 3.13 / Flutter 3.47 环境下崩溃、build_runner 死锁。
   drift_dev: ^2.16.0
-  riverpod_generator: ^2.3.9
   build_runner: ^2.4.6
 
 # For information on the generic Dart part of this file, see the

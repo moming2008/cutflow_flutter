@@ -3209,7 +3209,16 @@ class $$VideoItemsTableTableManager
                 importedAt: importedAt,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$VideoItemsTable, VideoItem>(table),
+                  BaseReferences<_$AppDatabase, $VideoItemsTable, VideoItem>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -3652,7 +3661,16 @@ class $$ExportTasksTableTableManager
                 errorMessage: errorMessage,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$ExportTasksTable, ExportTask>(table),
+                  BaseReferences<_$AppDatabase, $ExportTasksTable, ExportTask>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -3962,7 +3980,16 @@ class $$CropPresetsTableTableManager
                 sortOrder: sortOrder,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$CropPresetsTable, CropPreset>(table),
+                  BaseReferences<_$AppDatabase, $CropPresetsTable, CropPreset>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -4202,7 +4229,16 @@ class $$EditorDraftsTableTableManager
                 updatedAt: updatedAt,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$EditorDraftsTable, EditorDraft>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $EditorDraftsTable,
+                    EditorDraft
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -4341,7 +4377,16 @@ class $$AppSettingsTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$AppSettingsTable, AppSetting>(table),
+                  BaseReferences<_$AppDatabase, $AppSettingsTable, AppSetting>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
