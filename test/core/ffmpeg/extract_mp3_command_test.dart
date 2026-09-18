@@ -73,7 +73,8 @@ void main() {
     });
 
     test('封面缩放滤镜限制最长边 600 且不放大', () {
-      expect(_valueOf(args, '-vf'), equals(r'scale=w=min(600\,iw):h=-2'));
+      expect(_valueOf(args, '-vf'),
+          equals(r'scale=w=min(600\,iw):h=min(600\,ih):force_original_aspect_ratio=decrease'));
     });
 
     test('封面流带 Album cover 元数据', () {
@@ -98,6 +99,7 @@ void main() {
     test('不出现任何封面相关参数', () {
       expect(args.contains('-c:v'), isFalse);
       expect(args.contains('-vf'), isFalse);
+      expect(args.contains('-q:v'), isFalse);
       expect(args.contains('-disposition:v'), isFalse);
       expect(args.contains('-metadata:s:v'), isFalse);
       expect(_allValuesOf(args, '-map'), isEmpty);

@@ -212,7 +212,8 @@ static List<String> buildExtractMp3({
 -c:a libmp3lame
 -b:a <N>k
 -c:v mjpeg
--vf scale=w=min(600\,iw):h=-2      # 最长边限 600，不放大
+-vf scale=w=min(600\,iw):h=min(600\,ih):force_original_aspect_ratio=decrease
+                                   # 最长边限 600，不放大（竖图同样受限）
 -q:v 3
 -disposition:v attached_pic
 -id3v2_version 3
@@ -399,7 +400,7 @@ const bool kAudioOnlyMode = true;   // ← 一个常量切换完整版 / 音频�
 - 标签含中文、空格、引号、`&`、`|` 时，`-metadata` 值原样传递（不转义、不截断）
 - 标签含换行符时被规整为空格
 - 空标签（null 或空串）**不生成**对应 `-metadata`
-- 封面缩放滤镜字符串正确：`scale=w=min(600\,iw):h=-2`
+- 封面缩放滤镜字符串正确：`scale=w=min(600\,iw):h=min(600\,ih):force_original_aspect_ratio=decrease`
 - `-id3v2_version 3` 始终存在
 - `-b:a <N>k` 与传入码率一致
 

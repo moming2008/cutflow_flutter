@@ -231,7 +231,7 @@ class FfmpegCommandBuilder {
     if (hasCover) {
       args.addAll([
         '-c:v', 'mjpeg', // 统一重编码为 JPEG（MP3 APIC 只认 JPEG/PNG）
-        '-vf', r'scale=w=min(600\,iw):h=-2', // 最长边 600，不放大
+        '-vf', r'scale=w=min(600\,iw):h=min(600\,ih):force_original_aspect_ratio=decrease', // 最长边 600，不放大
         '-q:v', '3',
         '-disposition:v', 'attached_pic',
       ]);
