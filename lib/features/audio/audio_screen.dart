@@ -35,6 +35,9 @@ class AudioScreen extends ConsumerStatefulWidget {
 class _AudioScreenState extends ConsumerState<AudioScreen> {
   final _previewKey = GlobalKey<VideoPreviewPanelState>();
 
+  /// 预览播放头位置（毫秒），喂给区间控件的当前位置指示点
+  int _currentPositionMs = 0;
+
   Future<void> _pickSourceFile() async {
     try {
       final result = await FilePicker.platform.pickFiles(
@@ -74,6 +77,20 @@ class _AudioScreenState extends ConsumerState<AudioScreen> {
     final durationMs = ref.read(audioProvider).sourceDurationMs;
     final target = (preview.currentPositionMs + deltaMs).clamp(0, durationMs);
     preview.seekTo(target);
+    // 指示点立刻跟手，不等播放器位置流：播放器未就绪时流回调根本不会来，
+    // 而滑块上的圆点就是这两个按钮唯一可见的反馈。clamp 与 seek 同一处。
+    setState(() => _currentPositionMs = target);
+  }
+
+  /// 播放位置变化 → 更新指示点
+  ///
+  /// **节流方式：只在整秒值变化时才重建。**
+  /// 播放器的位置流是连续触发的，每次都 setState 会让整棵表单每秒重建几十次；
+  /// 而指示点按秒级粒度移动已经足够（跨多分钟的素材上远小于一个像素）。
+  /// 选整秒而非「~100ms 时间闸」是因为它不依赖真实时钟，行为可被确定性地断言。
+  void _onPositionChanged(int ms) {
+    if (ms ~/ 1000 == _currentPositionMs ~/ 1000) return;
+    setState(() => _currentPositionMs = ms);
   }
 
   @override
@@ -81,6 +98,12 @@ class _AudioScreenState extends ConsumerState<AudioScreen> {
     final state = ref.watch(audioProvider);
     final records = ref.watch(audioRecordsProvider);
     final notifier = ref.read(audioProvider.notifier);
+
+    // 换源后区间会被重置为全片，上一个文件的播放头留着无意义，还可能落在
+    // 新时长之外，故归零
+    ref.listen(audioProvider.select((s) => s.sourcePath), (previous, next) {
+      if (previous != next) setState(() => _currentPositionMs = 0);
+    });
 
     return Scaffold(
       appBar: AppBar(
@@ -205,7 +228,7 @@ class _AudioScreenState extends ConsumerState<AudioScreen> {
           durationMs: state.sourceDurationMs,
           trimStartMs: state.trimStartMs,
           trimEndMs: state.trimEndMs,
-          currentPositionMs: 0,
+          currentPositionMs: _currentPositionMs,
           frameRate: 0,
           stepBackwardLabel: '快退 1s',
           stepForwardLabel: '快进 1s',
@@ -366,7 +389,7 @@ class _AudioScreenState extends ConsumerState<AudioScreen> {
     return VideoPreviewPanel(
       key: _previewKey,
       video: video,
-      onPositionChanged: (_) {},
+      onPositionChanged: _onPositionChanged,
     );
   }
 

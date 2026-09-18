@@ -9,11 +9,14 @@ import 'package:cutflow_flutter/core/repository/app_settings_repository.dart';
 import 'package:cutflow_flutter/core/repository/audio_repository.dart';
 import 'package:cutflow_flutter/features/audio/audio_screen.dart';
 import 'package:cutflow_flutter/features/audio/audio_viewmodel.dart';
+import 'package:cutflow_flutter/features/editor/widgets/trim_range_control.dart';
+import 'package:cutflow_flutter/features/editor/widgets/video_preview_panel.dart';
 
 import 'support/seedable_audio_viewmodel.dart';
 
 void main() {
   late AppDatabase testDb;
+  late SeedableAudioViewModel vm;
 
   setUp(() {
     testDb = AppDatabase.forTest(NativeDatabase.memory());
@@ -29,21 +32,29 @@ void main() {
   /// `late AppDatabase database` 并抛 LateInitializationError。
   /// [seed] 用于铺「已选好文件」这类前置状态（选文件会触发 ffprobe，测试里不能真跑）。
   Widget buildApp({AudioState? seed}) {
-    final viewModel = SeedableAudioViewModel(
+    vm = SeedableAudioViewModel(
       AudioRepository(testDb),
       AppSettingsRepository(testDb),
     );
-    if (seed != null) viewModel.seed(seed);
+    if (seed != null) vm.seed(seed);
 
     return ProviderScope(
       overrides: [
-        audioProvider.overrideWith((ref) => viewModel),
+        audioProvider.overrideWith((ref) => vm),
         audioRecordsProvider
             .overrideWith((ref) => AudioRepository(testDb).watchAllTasks()),
       ],
       child: const MaterialApp(home: AudioScreen()),
     );
   }
+
+  /// 区间控件这次渲染拿到的播放头位置
+  ///
+  /// 取自最后一次 build 的 widget 实例，因此也是「有没有重建」的证据：
+  /// 未重建时它仍是上一次构建的实例与旧值。
+  int renderedPosition(WidgetTester tester) => tester
+      .widget<TrimRangeControl>(find.byType(TrimRangeControl))
+      .currentPositionMs;
 
   /// 包装 testWidgets：结束后主动卸载组件树并跑掉 drift 的零延时定时器
   ///
@@ -63,12 +74,13 @@ void main() {
 
   /// 「已选好视频、已探测出音轨、区间有效」的前置状态
   AudioState selectedSource({
+    String sourcePath = '/nope/video.mp4',
     int trimStartMs = 0,
     int trimEndMs = 60000,
     int durationMs = 60000,
   }) {
     return AudioState(
-      sourcePath: '/nope/video.mp4',
+      sourcePath: sourcePath,
       sourceName: 'video.mp4',
       sourceDurationMs: durationMs,
       trimStartMs: trimStartMs,
@@ -192,12 +204,75 @@ void main() {
     await tester.pump();
     expect(find.text('00:00:03.000'), findsNothing);
     expect(find.text('00:00:02.000'), findsOneWidget);
+    // 而指示点必须立刻动：这是按钮唯一的可见反馈
+    expect(renderedPosition(tester), equals(1000));
 
     await tester.tap(find.widgetWithText(OutlinedButton, '快退 1s'));
     await tester.pump();
     expect(find.text('00:00:01.000'), findsNothing);
     expect(find.text('00:00:02.000'), findsOneWidget);
     expect(find.text('00:00:50.000'), findsOneWidget);
+    expect(renderedPosition(tester), equals(0));
+  });
+
+  // 播放头在界面上必须有可见表示，否则按「快进 1s」屏幕毫无变化，按钮读起来是坏的
+  screenTest('播放位置回调驱动指示点', (tester) async {
+    await tester.pumpWidget(buildApp(seed: selectedSource(durationMs: 70000)));
+    await tester.pump();
+
+    expect(renderedPosition(tester), equals(0));
+
+    tester
+        .widget<VideoPreviewPanel>(find.byType(VideoPreviewPanel))
+        .onPositionChanged!(3200);
+    await tester.pump();
+
+    expect(renderedPosition(tester), equals(3200));
+  });
+
+  // 播放器位置流是连续触发的：同一整秒内的多次回调不得各触发一次重建
+  // （「有没有重建」的证据就是区间控件这次构建拿到的值）
+  screenTest('同一秒内的连续位置回调不触发重建', (tester) async {
+    await tester.pumpWidget(buildApp(seed: selectedSource(durationMs: 70000)));
+    await tester.pump();
+
+    final panel =
+        tester.widget<VideoPreviewPanel>(find.byType(VideoPreviewPanel));
+
+    panel.onPositionChanged!(400);
+    await tester.pump();
+    expect(renderedPosition(tester), equals(0));
+
+    panel.onPositionChanged!(900);
+    await tester.pump();
+    expect(renderedPosition(tester), equals(0));
+
+    panel.onPositionChanged!(1200); // 跨到第 1 秒，才允许重建
+    await tester.pump();
+    expect(renderedPosition(tester), equals(1200));
+  });
+
+  // 换源后区间被重置为全片，上一个文件的播放头留着无意义（还可能越界）
+  screenTest('换源后指示点归零', (tester) async {
+    await tester.pumpWidget(buildApp(seed: selectedSource(durationMs: 70000)));
+    await tester.pump();
+
+    await tester.ensureVisible(find.widgetWithText(OutlinedButton, '快进 1s'));
+    await tester.tap(find.widgetWithText(OutlinedButton, '快进 1s'));
+    await tester.pump();
+    expect(renderedPosition(tester), equals(1000));
+
+    vm.seed(selectedSource(
+      sourcePath: '/nope/other.mp4',
+      durationMs: 70000,
+    ));
+    await tester.pump();
+
+    expect(
+      tester.widget<VideoPreviewPanel>(find.byType(VideoPreviewPanel)).video.path,
+      equals('/nope/other.mp4'),
+    );
+    expect(renderedPosition(tester), equals(0));
   });
 
   // 探测中入点/出点都还是 0，此时报「出点必须大于入点」是误导
