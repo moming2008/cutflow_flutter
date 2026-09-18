@@ -249,12 +249,6 @@ class AudioViewModel extends StateNotifier<AudioState> {
     state = state.copyWith(trimEndMs: clamped, error: null);
   }
 
-  /// 「快退」/「快进」按固定步长移动入点
-  void stepStart(int deltaMs) => setTrimStart(state.trimStartMs + deltaMs);
-
-  /// 「快退」/「快进」按固定步长移动出点
-  void stepEnd(int deltaMs) => setTrimEnd(state.trimEndMs + deltaMs);
-
   void setTitle(String value) => state = state.copyWith(title: value);
   void setArtist(String value) => state = state.copyWith(artist: value);
   void setAlbum(String value) => state = state.copyWith(album: value);

@@ -62,6 +62,20 @@ class _AudioScreenState extends ConsumerState<AudioScreen> {
     }
   }
 
+  /// 步进预览播放头（音频场景按秒计，不是按帧）
+  ///
+  /// 与编辑器一致：这两个按钮移动的是**播放位置**，不是入点/出点。
+  /// 「设定入点 / 设定出点」取的是当前播放位置，若播放头只能靠拖滑块移动，
+  /// 那对按钮就形同虚设；而且「快进」若去推入点，几下就能把入点顶到出点，
+  /// 让「开始转换」无解释地变灰。
+  void _seekBy(int deltaMs) {
+    final preview = _previewKey.currentState;
+    if (preview == null) return;
+    final durationMs = ref.read(audioProvider).sourceDurationMs;
+    final target = (preview.currentPositionMs + deltaMs).clamp(0, durationMs);
+    preview.seekTo(target);
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(audioProvider);
@@ -140,9 +154,17 @@ class _AudioScreenState extends ConsumerState<AudioScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 无音轨拦截条
-        if (state.sourceInfo != null && !state.sourceInfo!.hasAudio) ...[
-          _banner('该视频没有音频轨道，无法提取音频', AppColors.error),
+        // 阻断原因（无音轨 / 出点不大于入点）
+        //
+        // 按钮变灰时必须说明为什么，否则用户只看到一个不可点的「开始转换」。
+        // 无音轨那条也走 blockingError，故统一在这里渲染一次，不会重复。
+        // 排除的两种情况：
+        // - state.error 非空：它会在下方单独成条，同一时刻不叠两条消息；
+        // - 探测中：此时入点/出点都还是 0，报「出点必须大于入点」是误导。
+        if (state.error == null &&
+            !state.isProbing &&
+            state.blockingError != null) ...[
+          _banner(state.blockingError!, AppColors.error),
           const SizedBox(height: 12),
         ],
 
@@ -194,8 +216,8 @@ class _AudioScreenState extends ConsumerState<AudioScreen> {
           onTrimStartManualChanged: notifier.setTrimStart,
           onTrimEndManualChanged: notifier.setTrimEnd,
           onSliderChanged: (ms) => _previewKey.currentState?.seekTo(ms.round()),
-          onStepBackward: () => notifier.stepStart(-kAudioStepMs),
-          onStepForward: () => notifier.stepStart(kAudioStepMs),
+          onStepBackward: () => _seekBy(-kAudioStepMs),
+          onStepForward: () => _seekBy(kAudioStepMs),
         ),
 
         const SizedBox(height: 16),

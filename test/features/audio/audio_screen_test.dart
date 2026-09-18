@@ -62,15 +62,19 @@ void main() {
   }
 
   /// 「已选好视频、已探测出音轨、区间有效」的前置状态
-  AudioState selectedSource({int trimStartMs = 0, int trimEndMs = 60000}) {
+  AudioState selectedSource({
+    int trimStartMs = 0,
+    int trimEndMs = 60000,
+    int durationMs = 60000,
+  }) {
     return AudioState(
       sourcePath: '/nope/video.mp4',
       sourceName: 'video.mp4',
-      sourceDurationMs: 60000,
+      sourceDurationMs: durationMs,
       trimStartMs: trimStartMs,
       trimEndMs: trimEndMs,
       outputDirectory: '/nope',
-      sourceInfo: const AudioSourceInfo(hasAudio: true, durationMs: 60000),
+      sourceInfo: AudioSourceInfo(hasAudio: true, durationMs: durationMs),
     );
   }
 
@@ -109,6 +113,16 @@ void main() {
     expect(button.onPressed, isNull);
   });
 
+  // 按钮变灰时必须说明原因，否则用户只看到一个不可点的按钮
+  screenTest('区间非法时说明按钮为何不可用', (tester) async {
+    await tester.pumpWidget(
+      buildApp(seed: selectedSource(trimStartMs: 30000, trimEndMs: 30000)),
+    );
+    await tester.pump();
+
+    expect(find.text('出点必须大于入点'), findsOneWidget);
+  });
+
   screenTest('区间有效时开始转换按钮可用', (tester) async {
     await tester.pumpWidget(buildApp(seed: selectedSource()));
     await tester.pump();
@@ -117,6 +131,7 @@ void main() {
       find.widgetWithText(ElevatedButton, '开始转换'),
     );
     expect(button.onPressed, isNotNull);
+    expect(find.text('出点必须大于入点'), findsNothing);
   });
 
   screenTest('无音轨时给出拦截提示', (tester) async {
@@ -127,11 +142,78 @@ void main() {
     );
     await tester.pump();
 
+    // findsOneWidget 同时钉住「无音轨只报一次」：该文案既在 blockingError 里，
+    // 也曾有独立的无音轨条，两处都渲染就会变成 2
     expect(find.text('该视频没有音频轨道，无法提取音频'), findsOneWidget);
 
     final button = tester.widget<ElevatedButton>(
       find.widgetWithText(ElevatedButton, '开始转换'),
     );
     expect(button.onPressed, isNull);
+  });
+
+  screenTest('已有错误提示时不再叠一条阻断条', (tester) async {
+    await tester.pumpWidget(
+      buildApp(
+        seed: selectedSource().copyWith(
+          sourceInfo: AudioSourceInfo.noAudio,
+          error: '该视频没有音频轨道，无法提取音频',
+        ),
+      ),
+    );
+    await tester.pump();
+
+    // 同一时刻只给一条消息（否则这里会是 2）
+    expect(find.text('该视频没有音频轨道，无法提取音频'), findsOneWidget);
+  });
+
+  // 「快退 1s / 快进 1s」按 TrimRangeControl 的契约步进**播放头**（与编辑器一致），
+  // 不是挪动入点：若去推入点，连点几下就能把入点顶到出点，让按钮无解释地变灰。
+  screenTest('步进按钮移动播放头而非区间', (tester) async {
+    await tester.pumpWidget(
+      buildApp(
+        seed: selectedSource(
+          trimStartMs: 2000,
+          trimEndMs: 50000,
+          durationMs: 70000,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('00:00:02.000'), findsOneWidget); // 入点
+    expect(find.text('00:00:50.000'), findsOneWidget); // 出点
+
+    await tester.ensureVisible(find.widgetWithText(OutlinedButton, '快进 1s'));
+
+    // 逐次点击后都要断言：若两次点击之间入点被推动、又被下一次点击推回来，
+    // 只看最终状态是看不出来的
+    await tester.tap(find.widgetWithText(OutlinedButton, '快进 1s'));
+    await tester.pump();
+    expect(find.text('00:00:03.000'), findsNothing);
+    expect(find.text('00:00:02.000'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(OutlinedButton, '快退 1s'));
+    await tester.pump();
+    expect(find.text('00:00:01.000'), findsNothing);
+    expect(find.text('00:00:02.000'), findsOneWidget);
+    expect(find.text('00:00:50.000'), findsOneWidget);
+  });
+
+  // 探测中入点/出点都还是 0，此时报「出点必须大于入点」是误导
+  screenTest('探测中不报出点问题', (tester) async {
+    await tester.pumpWidget(
+      buildApp(
+        seed: AudioState(
+          sourcePath: '/nope/video.mp4',
+          sourceName: 'video.mp4',
+          outputDirectory: '/nope',
+          isProbing: true,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('出点必须大于入点'), findsNothing);
   });
 }
