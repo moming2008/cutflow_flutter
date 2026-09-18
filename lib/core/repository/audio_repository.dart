@@ -42,6 +42,12 @@ class AudioRepository {
       status: _statusToString(task.status),
       progress: Value(task.progress),
       createdAt: task.createdAt,
+      // 结果字段同样随任务落库，而非依赖建表时的 NULL 默认：
+      // 否则插入一个 done/failed 任务（重试、复制、从库恢复等路径）会被
+      // 静默写成「已完成但没有输出路径」「失败但没有错误信息」
+      outputPath: Value(task.outputPath),
+      completedAt: Value(task.completedAt),
+      errorMessage: Value(task.errorMessage),
     );
     return await _db.insertAudioTask(companion);
   }

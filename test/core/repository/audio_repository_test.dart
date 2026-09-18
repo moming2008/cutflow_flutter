@@ -54,6 +54,23 @@ void main() {
     expect(loaded.trimStartMs, equals(30000));
   });
 
+  test('insertTask 保留 outputPath / completedAt / errorMessage', () async {
+    final task = _task().copyWith(
+      status: AudioTaskStatus.failed,
+      outputPath: '/out/song.mp3',
+      errorMessage: '输出文件被占用',
+      completedAt: 1700000000000,
+    );
+
+    final id = await repo.insertTask(task);
+    final loaded = await repo.getTaskById(id);
+
+    expect(loaded, isNotNull);
+    expect(loaded!.outputPath, equals('/out/song.mp3'));
+    expect(loaded.errorMessage, equals('输出文件被占用'));
+    expect(loaded.completedAt, equals(1700000000000));
+  });
+
   test('updateTaskFull 可改状态、进度与输出路径', () async {
     final id = await repo.insertTask(_task());
 
