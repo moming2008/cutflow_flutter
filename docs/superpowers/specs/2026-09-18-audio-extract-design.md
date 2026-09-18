@@ -130,7 +130,7 @@ AudioScreen ─→ AudioViewModel ─→ AudioRepository ─→ AppDatabase
 | createdAt | integer NOT NULL | 创建时间戳 |
 | completedAt | integer nullable | 完成时间戳 |
 
-索引：`idx_audio_tasks_status`(status)、`idx_audio_tasks_created`(createdAt)。
+索引：本表不声明自定义索引 —— 项目既有的 `Set<Index> get indexes` 写法并非 drift API、实际从未建出索引，且本功能没有需要索引的查询。
 
 ### 3.2 AudioTaskStatus 枚举
 

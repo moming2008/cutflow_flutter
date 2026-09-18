@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 // drift 与 matcher 都导出 isNull/isNotNull，这里显式隐藏 drift 的同名顶层函数
@@ -97,14 +98,32 @@ void main() {
       expect(tasks.first.outputName, equals('new.mp3'));
     });
 
-    test('watchAllAudioTasks 在插入后推送新值', () async {
+    test('watchAllAudioTasks 在同一订阅上推送新值', () async {
       final stream = database.watchAllAudioTasks();
-      final first = await stream.first;
-      expect(first, isEmpty);
+      final events = <List<AudioTask>>[];
+      final firstEvent = Completer<void>();
+      final secondEvent = Completer<void>();
 
+      final subscription = stream.listen((rows) {
+        events.add(rows);
+        // 首个事件是当前（空）结果，第二个事件应由插入触发
+        if (events.length == 1 && !firstEvent.isCompleted) {
+          firstEvent.complete();
+        } else if (events.length == 2 && !secondEvent.isCompleted) {
+          secondEvent.complete();
+        }
+      });
+
+      // 必须先等首个事件落地：drift 的初始查询是异步的，若在它完成前就插入，
+      // 插入结果会被并进首个事件里，第二次事件就不会到来（订阅本身没问题）。
+      await firstEvent.future;
       await database.insertAudioTask(_companion());
-      final second = await stream.first;
-      expect(second.length, equals(1));
+      // 等到第二个事件真的到达；若流只会在订阅时查询一次，这里会超时失败
+      await secondEvent.future;
+      await subscription.cancel();
+
+      expect(events.first, isEmpty);
+      expect(events.last.length, equals(1));
     });
   });
 
@@ -151,7 +170,12 @@ void main() {
 
         await db.close();
       } finally {
-        await dir.delete(recursive: true);
+        // 清理失败不应顶掉主体抛出的真实异常：
+        // 主体中途抛错时末尾的 db.close() 不会执行，库文件仍被占用，
+        // delete 会抛 PathAccessException，而 finally 里的异常会替换掉原始异常。
+        try {
+          await dir.delete(recursive: true);
+        } catch (_) {}
       }
     });
   });

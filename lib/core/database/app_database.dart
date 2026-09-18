@@ -108,10 +108,11 @@ class AudioTasks extends Table {
   IntColumn get createdAt => integer()();
   IntColumn get completedAt => integer().nullable()();
 
-  Set<Index> get indexes => {
-    Index('idx_audio_tasks_status', 'CREATE INDEX idx_audio_tasks_status ON audio_tasks (status)'),
-    Index('idx_audio_tasks_created', 'CREATE INDEX idx_audio_tasks_created ON audio_tasks (createdAt)'),
-  };
+  // 本表刻意不声明自定义索引。
+  // 视频侧表（ExportTasks / EditorDrafts）里的 `Set<Index> get indexes` 是遗留死代码：
+  // drift 从未读取该 getter（生成器只识别 primaryKey / uniqueKeys / tableName，
+  // 官方机制是类级注解 @TableIndex），它们的索引实际从未在 SQLite 中建立。
+  // 与其复制一段看似生效、实则无效的声明，不如不写；本功能也没有需要索引的查询。
 }
 
 // ==================== Database ====================
