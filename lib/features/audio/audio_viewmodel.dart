@@ -146,6 +146,13 @@ class AudioViewModel extends StateNotifier<AudioState> {
   FfmpegEngine? _currentEngine;
   int? _currentTaskId;
 
+  /// 本次转换是否已被用户取消
+  ///
+  /// 由本 VM 自己记账，**不**解析引擎的错误文案来判断「是不是取消」：
+  /// 引擎在取消时的报错并不稳定（实测可能报成 null check 之类的执行错误），
+  /// 若据此判定，取消就会被误当成转换失败。
+  bool _cancelRequested = false;
+
   /// 本次转换**去重后**的实际输出路径（取消/失败时据此清理半成品文件）
   String? _currentOutputPath;
 
@@ -173,6 +180,10 @@ class AudioViewModel extends StateNotifier<AudioState> {
   }
 
   /// 选择源视频 → 重置区间 → 异步探测音轨
+  ///
+  /// 刻意**不**触碰 `isConverting`：转换途中换源不应改写正在进行的那次转换的
+  /// 标志位，否则 [canConvert] 会重新变为 true 而允许再起一个 ffmpeg。
+  /// 该标志只由 [startConversion] 自行收尾。
   Future<void> setSourceFile(String path) async {
     final name = p.basename(path);
     state = state.copyWith(
@@ -183,15 +194,20 @@ class AudioViewModel extends StateNotifier<AudioState> {
       trimEndMs: 0,
       sourceInfo: null,
       isProbing: true,
-      isConverting: false,
       progress: 0,
       error: null,
       success: null,
     );
     log('AudioVM').i('Source selected: $path');
+    await _probeSource(path);
+  }
 
+  /// 探测 [path] 的音轨信息并回填状态
+  ///
+  /// [setSourceFile] 与 [restoreFromTask] 共用。探测期间用户可能又换了文件、
+  /// 或又恢复了另一条记录，故写入前校验路径仍是当初那一个。
+  Future<void> _probeSource(String path) async {
     final info = await AudioMetadataProbe.probe(path);
-    // 探测期间用户可能又换了文件，此处校验路径未被替换
     if (!mounted || state.sourcePath != path) return;
 
     state = state.copyWith(
@@ -244,6 +260,14 @@ class AudioViewModel extends StateNotifier<AudioState> {
 
   /// 开始转换
   Future<void> startConversion() async {
+    // 同一时刻至多一个转换在跑。这条不变式不能依赖界面禁用按钮，
+    // 否则转换途中换源 → 探测完成 → canConvert 重新为 true → 起第二个 ffmpeg，
+    // 而 _currentEngine/_currentTaskId 会被覆盖，前一个进程从此无法取消。
+    if (state.isConverting) {
+      log('AudioVM').w('Conversion already running, ignoring start request');
+      return;
+    }
+
     final blocked = state.blockingError;
     if (blocked != null) {
       state = state.copyWith(error: blocked);
@@ -257,6 +281,7 @@ class AudioViewModel extends StateNotifier<AudioState> {
       return;
     }
 
+    _cancelRequested = false; // 本次运行的取消标志复位
     state = state.copyWith(
       isConverting: true,
       progress: 0,
@@ -343,14 +368,15 @@ class AudioViewModel extends StateNotifier<AudioState> {
 
         if (progress.hasError) {
           _currentEngine = null;
-          final message = progress.error == 'Cancelled by user'
-              ? '已取消'
-              : '转换失败: ${progress.error}';
+          // 以本 VM 的记账为准，不看 progress.error 的文案
+          final cancelled = _cancelRequested;
+          final message =
+              cancelled ? '已取消' : '转换失败: ${progress.error}';
           await _handleFailure(
             taskId: taskId,
             outputPath: outputPath,
             message: message,
-            cancelled: progress.error == 'Cancelled by user',
+            cancelled: cancelled,
           );
           return;
         }
@@ -385,8 +411,15 @@ class AudioViewModel extends StateNotifier<AudioState> {
       _currentTaskId = null;
       _currentOutputPath = null;
       if (taskId != null) {
-        await _repository.updateTaskFull(
-            id: taskId, status: 'FAILED', errorMessage: e.toString());
+        // 失败落库自身也可能抛（库被关闭、磁盘满等）。必须吞掉：
+        // 一旦异常从这里逃出 startConversion，下面的 isConverting 复位就不会执行，
+        // 界面将永远卡在「转换中」。
+        try {
+          await _repository.updateTaskFull(
+              id: taskId, status: 'FAILED', errorMessage: e.toString());
+        } catch (dbError) {
+          log('AudioVM').e('Failed to mark task as FAILED', error: dbError);
+        }
       }
       state = state.copyWith(isConverting: false, error: '转换失败: $e');
     }
@@ -399,6 +432,7 @@ class AudioViewModel extends StateNotifier<AudioState> {
     final engine = _currentEngine;
     if (engine == null) return;
 
+    _cancelRequested = true; // 必须在 kill 之前置位，供错误分支判定
     await engine.cancel();
     _currentEngine = null;
     _currentTaskId = null;
@@ -427,9 +461,15 @@ class AudioViewModel extends StateNotifier<AudioState> {
       album: task.album ?? '',
       coverPath: task.coverPath,
       targetBitrateKbps: task.targetBitrateKbps,
+      // 换源必须丢掉上一个文件的探测结果并重新探测：
+      // 沿用 stale 的 noAudio 会把有音轨的文件误判成无音轨，
+      // 反而堵死本方法要开启的「修正后重试」
+      sourceInfo: null,
+      isProbing: true,
       error: null,
       success: null,
     );
+    unawaited(_probeSource(task.sourcePath));
   }
 
   Future<void> _handleFailure({
