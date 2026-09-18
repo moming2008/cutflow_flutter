@@ -2921,6 +2921,1074 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
   }
 }
 
+class $AudioTasksTable extends AudioTasks
+    with TableInfo<$AudioTasksTable, AudioTask> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AudioTasksTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _sourcePathMeta = const VerificationMeta(
+    'sourcePath',
+  );
+  @override
+  late final GeneratedColumn<String> sourcePath = GeneratedColumn<String>(
+    'source_path',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceNameMeta = const VerificationMeta(
+    'sourceName',
+  );
+  @override
+  late final GeneratedColumn<String> sourceName = GeneratedColumn<String>(
+    'source_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceDurationMsMeta = const VerificationMeta(
+    'sourceDurationMs',
+  );
+  @override
+  late final GeneratedColumn<int> sourceDurationMs = GeneratedColumn<int>(
+    'source_duration_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceBitrateKbpsMeta = const VerificationMeta(
+    'sourceBitrateKbps',
+  );
+  @override
+  late final GeneratedColumn<int> sourceBitrateKbps = GeneratedColumn<int>(
+    'source_bitrate_kbps',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _trimStartMsMeta = const VerificationMeta(
+    'trimStartMs',
+  );
+  @override
+  late final GeneratedColumn<int> trimStartMs = GeneratedColumn<int>(
+    'trim_start_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _trimEndMsMeta = const VerificationMeta(
+    'trimEndMs',
+  );
+  @override
+  late final GeneratedColumn<int> trimEndMs = GeneratedColumn<int>(
+    'trim_end_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _artistMeta = const VerificationMeta('artist');
+  @override
+  late final GeneratedColumn<String> artist = GeneratedColumn<String>(
+    'artist',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _albumMeta = const VerificationMeta('album');
+  @override
+  late final GeneratedColumn<String> album = GeneratedColumn<String>(
+    'album',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _coverPathMeta = const VerificationMeta(
+    'coverPath',
+  );
+  @override
+  late final GeneratedColumn<String> coverPath = GeneratedColumn<String>(
+    'cover_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _targetBitrateKbpsMeta = const VerificationMeta(
+    'targetBitrateKbps',
+  );
+  @override
+  late final GeneratedColumn<int> targetBitrateKbps = GeneratedColumn<int>(
+    'target_bitrate_kbps',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _outputNameMeta = const VerificationMeta(
+    'outputName',
+  );
+  @override
+  late final GeneratedColumn<String> outputName = GeneratedColumn<String>(
+    'output_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _outputPathMeta = const VerificationMeta(
+    'outputPath',
+  );
+  @override
+  late final GeneratedColumn<String> outputPath = GeneratedColumn<String>(
+    'output_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _progressMeta = const VerificationMeta(
+    'progress',
+  );
+  @override
+  late final GeneratedColumn<int> progress = GeneratedColumn<int>(
+    'progress',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _errorMessageMeta = const VerificationMeta(
+    'errorMessage',
+  );
+  @override
+  late final GeneratedColumn<String> errorMessage = GeneratedColumn<String>(
+    'error_message',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _completedAtMeta = const VerificationMeta(
+    'completedAt',
+  );
+  @override
+  late final GeneratedColumn<int> completedAt = GeneratedColumn<int>(
+    'completed_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    sourcePath,
+    sourceName,
+    sourceDurationMs,
+    sourceBitrateKbps,
+    trimStartMs,
+    trimEndMs,
+    title,
+    artist,
+    album,
+    coverPath,
+    targetBitrateKbps,
+    outputName,
+    outputPath,
+    status,
+    progress,
+    errorMessage,
+    createdAt,
+    completedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'audio_tasks';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AudioTask> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('source_path')) {
+      context.handle(
+        _sourcePathMeta,
+        sourcePath.isAcceptableOrUnknown(data['source_path']!, _sourcePathMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sourcePathMeta);
+    }
+    if (data.containsKey('source_name')) {
+      context.handle(
+        _sourceNameMeta,
+        sourceName.isAcceptableOrUnknown(data['source_name']!, _sourceNameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceNameMeta);
+    }
+    if (data.containsKey('source_duration_ms')) {
+      context.handle(
+        _sourceDurationMsMeta,
+        sourceDurationMs.isAcceptableOrUnknown(
+          data['source_duration_ms']!,
+          _sourceDurationMsMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceDurationMsMeta);
+    }
+    if (data.containsKey('source_bitrate_kbps')) {
+      context.handle(
+        _sourceBitrateKbpsMeta,
+        sourceBitrateKbps.isAcceptableOrUnknown(
+          data['source_bitrate_kbps']!,
+          _sourceBitrateKbpsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('trim_start_ms')) {
+      context.handle(
+        _trimStartMsMeta,
+        trimStartMs.isAcceptableOrUnknown(
+          data['trim_start_ms']!,
+          _trimStartMsMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_trimStartMsMeta);
+    }
+    if (data.containsKey('trim_end_ms')) {
+      context.handle(
+        _trimEndMsMeta,
+        trimEndMs.isAcceptableOrUnknown(data['trim_end_ms']!, _trimEndMsMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_trimEndMsMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    }
+    if (data.containsKey('artist')) {
+      context.handle(
+        _artistMeta,
+        artist.isAcceptableOrUnknown(data['artist']!, _artistMeta),
+      );
+    }
+    if (data.containsKey('album')) {
+      context.handle(
+        _albumMeta,
+        album.isAcceptableOrUnknown(data['album']!, _albumMeta),
+      );
+    }
+    if (data.containsKey('cover_path')) {
+      context.handle(
+        _coverPathMeta,
+        coverPath.isAcceptableOrUnknown(data['cover_path']!, _coverPathMeta),
+      );
+    }
+    if (data.containsKey('target_bitrate_kbps')) {
+      context.handle(
+        _targetBitrateKbpsMeta,
+        targetBitrateKbps.isAcceptableOrUnknown(
+          data['target_bitrate_kbps']!,
+          _targetBitrateKbpsMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_targetBitrateKbpsMeta);
+    }
+    if (data.containsKey('output_name')) {
+      context.handle(
+        _outputNameMeta,
+        outputName.isAcceptableOrUnknown(data['output_name']!, _outputNameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_outputNameMeta);
+    }
+    if (data.containsKey('output_path')) {
+      context.handle(
+        _outputPathMeta,
+        outputPath.isAcceptableOrUnknown(data['output_path']!, _outputPathMeta),
+      );
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('progress')) {
+      context.handle(
+        _progressMeta,
+        progress.isAcceptableOrUnknown(data['progress']!, _progressMeta),
+      );
+    }
+    if (data.containsKey('error_message')) {
+      context.handle(
+        _errorMessageMeta,
+        errorMessage.isAcceptableOrUnknown(
+          data['error_message']!,
+          _errorMessageMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('completed_at')) {
+      context.handle(
+        _completedAtMeta,
+        completedAt.isAcceptableOrUnknown(
+          data['completed_at']!,
+          _completedAtMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  AudioTask map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AudioTask(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      sourcePath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_path'],
+      )!,
+      sourceName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_name'],
+      )!,
+      sourceDurationMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}source_duration_ms'],
+      )!,
+      sourceBitrateKbps: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}source_bitrate_kbps'],
+      ),
+      trimStartMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}trim_start_ms'],
+      )!,
+      trimEndMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}trim_end_ms'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      ),
+      artist: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}artist'],
+      ),
+      album: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}album'],
+      ),
+      coverPath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cover_path'],
+      ),
+      targetBitrateKbps: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}target_bitrate_kbps'],
+      )!,
+      outputName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}output_name'],
+      )!,
+      outputPath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}output_path'],
+      ),
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      progress: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}progress'],
+      )!,
+      errorMessage: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}error_message'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+      completedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}completed_at'],
+      ),
+    );
+  }
+
+  @override
+  $AudioTasksTable createAlias(String alias) {
+    return $AudioTasksTable(attachedDatabase, alias);
+  }
+}
+
+class AudioTask extends DataClass implements Insertable<AudioTask> {
+  final int id;
+  final String sourcePath;
+  final String sourceName;
+  final int sourceDurationMs;
+  final int? sourceBitrateKbps;
+  final int trimStartMs;
+  final int trimEndMs;
+  final String? title;
+  final String? artist;
+  final String? album;
+  final String? coverPath;
+  final int targetBitrateKbps;
+  final String outputName;
+  final String? outputPath;
+  final String status;
+  final int progress;
+  final String? errorMessage;
+  final int createdAt;
+  final int? completedAt;
+  const AudioTask({
+    required this.id,
+    required this.sourcePath,
+    required this.sourceName,
+    required this.sourceDurationMs,
+    this.sourceBitrateKbps,
+    required this.trimStartMs,
+    required this.trimEndMs,
+    this.title,
+    this.artist,
+    this.album,
+    this.coverPath,
+    required this.targetBitrateKbps,
+    required this.outputName,
+    this.outputPath,
+    required this.status,
+    required this.progress,
+    this.errorMessage,
+    required this.createdAt,
+    this.completedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['source_path'] = Variable<String>(sourcePath);
+    map['source_name'] = Variable<String>(sourceName);
+    map['source_duration_ms'] = Variable<int>(sourceDurationMs);
+    if (!nullToAbsent || sourceBitrateKbps != null) {
+      map['source_bitrate_kbps'] = Variable<int>(sourceBitrateKbps);
+    }
+    map['trim_start_ms'] = Variable<int>(trimStartMs);
+    map['trim_end_ms'] = Variable<int>(trimEndMs);
+    if (!nullToAbsent || title != null) {
+      map['title'] = Variable<String>(title);
+    }
+    if (!nullToAbsent || artist != null) {
+      map['artist'] = Variable<String>(artist);
+    }
+    if (!nullToAbsent || album != null) {
+      map['album'] = Variable<String>(album);
+    }
+    if (!nullToAbsent || coverPath != null) {
+      map['cover_path'] = Variable<String>(coverPath);
+    }
+    map['target_bitrate_kbps'] = Variable<int>(targetBitrateKbps);
+    map['output_name'] = Variable<String>(outputName);
+    if (!nullToAbsent || outputPath != null) {
+      map['output_path'] = Variable<String>(outputPath);
+    }
+    map['status'] = Variable<String>(status);
+    map['progress'] = Variable<int>(progress);
+    if (!nullToAbsent || errorMessage != null) {
+      map['error_message'] = Variable<String>(errorMessage);
+    }
+    map['created_at'] = Variable<int>(createdAt);
+    if (!nullToAbsent || completedAt != null) {
+      map['completed_at'] = Variable<int>(completedAt);
+    }
+    return map;
+  }
+
+  AudioTasksCompanion toCompanion(bool nullToAbsent) {
+    return AudioTasksCompanion(
+      id: Value(id),
+      sourcePath: Value(sourcePath),
+      sourceName: Value(sourceName),
+      sourceDurationMs: Value(sourceDurationMs),
+      sourceBitrateKbps: sourceBitrateKbps == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceBitrateKbps),
+      trimStartMs: Value(trimStartMs),
+      trimEndMs: Value(trimEndMs),
+      title: title == null && nullToAbsent
+          ? const Value.absent()
+          : Value(title),
+      artist: artist == null && nullToAbsent
+          ? const Value.absent()
+          : Value(artist),
+      album: album == null && nullToAbsent
+          ? const Value.absent()
+          : Value(album),
+      coverPath: coverPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(coverPath),
+      targetBitrateKbps: Value(targetBitrateKbps),
+      outputName: Value(outputName),
+      outputPath: outputPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(outputPath),
+      status: Value(status),
+      progress: Value(progress),
+      errorMessage: errorMessage == null && nullToAbsent
+          ? const Value.absent()
+          : Value(errorMessage),
+      createdAt: Value(createdAt),
+      completedAt: completedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(completedAt),
+    );
+  }
+
+  factory AudioTask.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AudioTask(
+      id: serializer.fromJson<int>(json['id']),
+      sourcePath: serializer.fromJson<String>(json['sourcePath']),
+      sourceName: serializer.fromJson<String>(json['sourceName']),
+      sourceDurationMs: serializer.fromJson<int>(json['sourceDurationMs']),
+      sourceBitrateKbps: serializer.fromJson<int?>(json['sourceBitrateKbps']),
+      trimStartMs: serializer.fromJson<int>(json['trimStartMs']),
+      trimEndMs: serializer.fromJson<int>(json['trimEndMs']),
+      title: serializer.fromJson<String?>(json['title']),
+      artist: serializer.fromJson<String?>(json['artist']),
+      album: serializer.fromJson<String?>(json['album']),
+      coverPath: serializer.fromJson<String?>(json['coverPath']),
+      targetBitrateKbps: serializer.fromJson<int>(json['targetBitrateKbps']),
+      outputName: serializer.fromJson<String>(json['outputName']),
+      outputPath: serializer.fromJson<String?>(json['outputPath']),
+      status: serializer.fromJson<String>(json['status']),
+      progress: serializer.fromJson<int>(json['progress']),
+      errorMessage: serializer.fromJson<String?>(json['errorMessage']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+      completedAt: serializer.fromJson<int?>(json['completedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'sourcePath': serializer.toJson<String>(sourcePath),
+      'sourceName': serializer.toJson<String>(sourceName),
+      'sourceDurationMs': serializer.toJson<int>(sourceDurationMs),
+      'sourceBitrateKbps': serializer.toJson<int?>(sourceBitrateKbps),
+      'trimStartMs': serializer.toJson<int>(trimStartMs),
+      'trimEndMs': serializer.toJson<int>(trimEndMs),
+      'title': serializer.toJson<String?>(title),
+      'artist': serializer.toJson<String?>(artist),
+      'album': serializer.toJson<String?>(album),
+      'coverPath': serializer.toJson<String?>(coverPath),
+      'targetBitrateKbps': serializer.toJson<int>(targetBitrateKbps),
+      'outputName': serializer.toJson<String>(outputName),
+      'outputPath': serializer.toJson<String?>(outputPath),
+      'status': serializer.toJson<String>(status),
+      'progress': serializer.toJson<int>(progress),
+      'errorMessage': serializer.toJson<String?>(errorMessage),
+      'createdAt': serializer.toJson<int>(createdAt),
+      'completedAt': serializer.toJson<int?>(completedAt),
+    };
+  }
+
+  AudioTask copyWith({
+    int? id,
+    String? sourcePath,
+    String? sourceName,
+    int? sourceDurationMs,
+    Value<int?> sourceBitrateKbps = const Value.absent(),
+    int? trimStartMs,
+    int? trimEndMs,
+    Value<String?> title = const Value.absent(),
+    Value<String?> artist = const Value.absent(),
+    Value<String?> album = const Value.absent(),
+    Value<String?> coverPath = const Value.absent(),
+    int? targetBitrateKbps,
+    String? outputName,
+    Value<String?> outputPath = const Value.absent(),
+    String? status,
+    int? progress,
+    Value<String?> errorMessage = const Value.absent(),
+    int? createdAt,
+    Value<int?> completedAt = const Value.absent(),
+  }) => AudioTask(
+    id: id ?? this.id,
+    sourcePath: sourcePath ?? this.sourcePath,
+    sourceName: sourceName ?? this.sourceName,
+    sourceDurationMs: sourceDurationMs ?? this.sourceDurationMs,
+    sourceBitrateKbps: sourceBitrateKbps.present
+        ? sourceBitrateKbps.value
+        : this.sourceBitrateKbps,
+    trimStartMs: trimStartMs ?? this.trimStartMs,
+    trimEndMs: trimEndMs ?? this.trimEndMs,
+    title: title.present ? title.value : this.title,
+    artist: artist.present ? artist.value : this.artist,
+    album: album.present ? album.value : this.album,
+    coverPath: coverPath.present ? coverPath.value : this.coverPath,
+    targetBitrateKbps: targetBitrateKbps ?? this.targetBitrateKbps,
+    outputName: outputName ?? this.outputName,
+    outputPath: outputPath.present ? outputPath.value : this.outputPath,
+    status: status ?? this.status,
+    progress: progress ?? this.progress,
+    errorMessage: errorMessage.present ? errorMessage.value : this.errorMessage,
+    createdAt: createdAt ?? this.createdAt,
+    completedAt: completedAt.present ? completedAt.value : this.completedAt,
+  );
+  AudioTask copyWithCompanion(AudioTasksCompanion data) {
+    return AudioTask(
+      id: data.id.present ? data.id.value : this.id,
+      sourcePath: data.sourcePath.present
+          ? data.sourcePath.value
+          : this.sourcePath,
+      sourceName: data.sourceName.present
+          ? data.sourceName.value
+          : this.sourceName,
+      sourceDurationMs: data.sourceDurationMs.present
+          ? data.sourceDurationMs.value
+          : this.sourceDurationMs,
+      sourceBitrateKbps: data.sourceBitrateKbps.present
+          ? data.sourceBitrateKbps.value
+          : this.sourceBitrateKbps,
+      trimStartMs: data.trimStartMs.present
+          ? data.trimStartMs.value
+          : this.trimStartMs,
+      trimEndMs: data.trimEndMs.present ? data.trimEndMs.value : this.trimEndMs,
+      title: data.title.present ? data.title.value : this.title,
+      artist: data.artist.present ? data.artist.value : this.artist,
+      album: data.album.present ? data.album.value : this.album,
+      coverPath: data.coverPath.present ? data.coverPath.value : this.coverPath,
+      targetBitrateKbps: data.targetBitrateKbps.present
+          ? data.targetBitrateKbps.value
+          : this.targetBitrateKbps,
+      outputName: data.outputName.present
+          ? data.outputName.value
+          : this.outputName,
+      outputPath: data.outputPath.present
+          ? data.outputPath.value
+          : this.outputPath,
+      status: data.status.present ? data.status.value : this.status,
+      progress: data.progress.present ? data.progress.value : this.progress,
+      errorMessage: data.errorMessage.present
+          ? data.errorMessage.value
+          : this.errorMessage,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      completedAt: data.completedAt.present
+          ? data.completedAt.value
+          : this.completedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AudioTask(')
+          ..write('id: $id, ')
+          ..write('sourcePath: $sourcePath, ')
+          ..write('sourceName: $sourceName, ')
+          ..write('sourceDurationMs: $sourceDurationMs, ')
+          ..write('sourceBitrateKbps: $sourceBitrateKbps, ')
+          ..write('trimStartMs: $trimStartMs, ')
+          ..write('trimEndMs: $trimEndMs, ')
+          ..write('title: $title, ')
+          ..write('artist: $artist, ')
+          ..write('album: $album, ')
+          ..write('coverPath: $coverPath, ')
+          ..write('targetBitrateKbps: $targetBitrateKbps, ')
+          ..write('outputName: $outputName, ')
+          ..write('outputPath: $outputPath, ')
+          ..write('status: $status, ')
+          ..write('progress: $progress, ')
+          ..write('errorMessage: $errorMessage, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('completedAt: $completedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    sourcePath,
+    sourceName,
+    sourceDurationMs,
+    sourceBitrateKbps,
+    trimStartMs,
+    trimEndMs,
+    title,
+    artist,
+    album,
+    coverPath,
+    targetBitrateKbps,
+    outputName,
+    outputPath,
+    status,
+    progress,
+    errorMessage,
+    createdAt,
+    completedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AudioTask &&
+          other.id == this.id &&
+          other.sourcePath == this.sourcePath &&
+          other.sourceName == this.sourceName &&
+          other.sourceDurationMs == this.sourceDurationMs &&
+          other.sourceBitrateKbps == this.sourceBitrateKbps &&
+          other.trimStartMs == this.trimStartMs &&
+          other.trimEndMs == this.trimEndMs &&
+          other.title == this.title &&
+          other.artist == this.artist &&
+          other.album == this.album &&
+          other.coverPath == this.coverPath &&
+          other.targetBitrateKbps == this.targetBitrateKbps &&
+          other.outputName == this.outputName &&
+          other.outputPath == this.outputPath &&
+          other.status == this.status &&
+          other.progress == this.progress &&
+          other.errorMessage == this.errorMessage &&
+          other.createdAt == this.createdAt &&
+          other.completedAt == this.completedAt);
+}
+
+class AudioTasksCompanion extends UpdateCompanion<AudioTask> {
+  final Value<int> id;
+  final Value<String> sourcePath;
+  final Value<String> sourceName;
+  final Value<int> sourceDurationMs;
+  final Value<int?> sourceBitrateKbps;
+  final Value<int> trimStartMs;
+  final Value<int> trimEndMs;
+  final Value<String?> title;
+  final Value<String?> artist;
+  final Value<String?> album;
+  final Value<String?> coverPath;
+  final Value<int> targetBitrateKbps;
+  final Value<String> outputName;
+  final Value<String?> outputPath;
+  final Value<String> status;
+  final Value<int> progress;
+  final Value<String?> errorMessage;
+  final Value<int> createdAt;
+  final Value<int?> completedAt;
+  const AudioTasksCompanion({
+    this.id = const Value.absent(),
+    this.sourcePath = const Value.absent(),
+    this.sourceName = const Value.absent(),
+    this.sourceDurationMs = const Value.absent(),
+    this.sourceBitrateKbps = const Value.absent(),
+    this.trimStartMs = const Value.absent(),
+    this.trimEndMs = const Value.absent(),
+    this.title = const Value.absent(),
+    this.artist = const Value.absent(),
+    this.album = const Value.absent(),
+    this.coverPath = const Value.absent(),
+    this.targetBitrateKbps = const Value.absent(),
+    this.outputName = const Value.absent(),
+    this.outputPath = const Value.absent(),
+    this.status = const Value.absent(),
+    this.progress = const Value.absent(),
+    this.errorMessage = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.completedAt = const Value.absent(),
+  });
+  AudioTasksCompanion.insert({
+    this.id = const Value.absent(),
+    required String sourcePath,
+    required String sourceName,
+    required int sourceDurationMs,
+    this.sourceBitrateKbps = const Value.absent(),
+    required int trimStartMs,
+    required int trimEndMs,
+    this.title = const Value.absent(),
+    this.artist = const Value.absent(),
+    this.album = const Value.absent(),
+    this.coverPath = const Value.absent(),
+    required int targetBitrateKbps,
+    required String outputName,
+    this.outputPath = const Value.absent(),
+    required String status,
+    this.progress = const Value.absent(),
+    this.errorMessage = const Value.absent(),
+    required int createdAt,
+    this.completedAt = const Value.absent(),
+  }) : sourcePath = Value(sourcePath),
+       sourceName = Value(sourceName),
+       sourceDurationMs = Value(sourceDurationMs),
+       trimStartMs = Value(trimStartMs),
+       trimEndMs = Value(trimEndMs),
+       targetBitrateKbps = Value(targetBitrateKbps),
+       outputName = Value(outputName),
+       status = Value(status),
+       createdAt = Value(createdAt);
+  static Insertable<AudioTask> custom({
+    Expression<int>? id,
+    Expression<String>? sourcePath,
+    Expression<String>? sourceName,
+    Expression<int>? sourceDurationMs,
+    Expression<int>? sourceBitrateKbps,
+    Expression<int>? trimStartMs,
+    Expression<int>? trimEndMs,
+    Expression<String>? title,
+    Expression<String>? artist,
+    Expression<String>? album,
+    Expression<String>? coverPath,
+    Expression<int>? targetBitrateKbps,
+    Expression<String>? outputName,
+    Expression<String>? outputPath,
+    Expression<String>? status,
+    Expression<int>? progress,
+    Expression<String>? errorMessage,
+    Expression<int>? createdAt,
+    Expression<int>? completedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (sourcePath != null) 'source_path': sourcePath,
+      if (sourceName != null) 'source_name': sourceName,
+      if (sourceDurationMs != null) 'source_duration_ms': sourceDurationMs,
+      if (sourceBitrateKbps != null) 'source_bitrate_kbps': sourceBitrateKbps,
+      if (trimStartMs != null) 'trim_start_ms': trimStartMs,
+      if (trimEndMs != null) 'trim_end_ms': trimEndMs,
+      if (title != null) 'title': title,
+      if (artist != null) 'artist': artist,
+      if (album != null) 'album': album,
+      if (coverPath != null) 'cover_path': coverPath,
+      if (targetBitrateKbps != null) 'target_bitrate_kbps': targetBitrateKbps,
+      if (outputName != null) 'output_name': outputName,
+      if (outputPath != null) 'output_path': outputPath,
+      if (status != null) 'status': status,
+      if (progress != null) 'progress': progress,
+      if (errorMessage != null) 'error_message': errorMessage,
+      if (createdAt != null) 'created_at': createdAt,
+      if (completedAt != null) 'completed_at': completedAt,
+    });
+  }
+
+  AudioTasksCompanion copyWith({
+    Value<int>? id,
+    Value<String>? sourcePath,
+    Value<String>? sourceName,
+    Value<int>? sourceDurationMs,
+    Value<int?>? sourceBitrateKbps,
+    Value<int>? trimStartMs,
+    Value<int>? trimEndMs,
+    Value<String?>? title,
+    Value<String?>? artist,
+    Value<String?>? album,
+    Value<String?>? coverPath,
+    Value<int>? targetBitrateKbps,
+    Value<String>? outputName,
+    Value<String?>? outputPath,
+    Value<String>? status,
+    Value<int>? progress,
+    Value<String?>? errorMessage,
+    Value<int>? createdAt,
+    Value<int?>? completedAt,
+  }) {
+    return AudioTasksCompanion(
+      id: id ?? this.id,
+      sourcePath: sourcePath ?? this.sourcePath,
+      sourceName: sourceName ?? this.sourceName,
+      sourceDurationMs: sourceDurationMs ?? this.sourceDurationMs,
+      sourceBitrateKbps: sourceBitrateKbps ?? this.sourceBitrateKbps,
+      trimStartMs: trimStartMs ?? this.trimStartMs,
+      trimEndMs: trimEndMs ?? this.trimEndMs,
+      title: title ?? this.title,
+      artist: artist ?? this.artist,
+      album: album ?? this.album,
+      coverPath: coverPath ?? this.coverPath,
+      targetBitrateKbps: targetBitrateKbps ?? this.targetBitrateKbps,
+      outputName: outputName ?? this.outputName,
+      outputPath: outputPath ?? this.outputPath,
+      status: status ?? this.status,
+      progress: progress ?? this.progress,
+      errorMessage: errorMessage ?? this.errorMessage,
+      createdAt: createdAt ?? this.createdAt,
+      completedAt: completedAt ?? this.completedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (sourcePath.present) {
+      map['source_path'] = Variable<String>(sourcePath.value);
+    }
+    if (sourceName.present) {
+      map['source_name'] = Variable<String>(sourceName.value);
+    }
+    if (sourceDurationMs.present) {
+      map['source_duration_ms'] = Variable<int>(sourceDurationMs.value);
+    }
+    if (sourceBitrateKbps.present) {
+      map['source_bitrate_kbps'] = Variable<int>(sourceBitrateKbps.value);
+    }
+    if (trimStartMs.present) {
+      map['trim_start_ms'] = Variable<int>(trimStartMs.value);
+    }
+    if (trimEndMs.present) {
+      map['trim_end_ms'] = Variable<int>(trimEndMs.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (artist.present) {
+      map['artist'] = Variable<String>(artist.value);
+    }
+    if (album.present) {
+      map['album'] = Variable<String>(album.value);
+    }
+    if (coverPath.present) {
+      map['cover_path'] = Variable<String>(coverPath.value);
+    }
+    if (targetBitrateKbps.present) {
+      map['target_bitrate_kbps'] = Variable<int>(targetBitrateKbps.value);
+    }
+    if (outputName.present) {
+      map['output_name'] = Variable<String>(outputName.value);
+    }
+    if (outputPath.present) {
+      map['output_path'] = Variable<String>(outputPath.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (progress.present) {
+      map['progress'] = Variable<int>(progress.value);
+    }
+    if (errorMessage.present) {
+      map['error_message'] = Variable<String>(errorMessage.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (completedAt.present) {
+      map['completed_at'] = Variable<int>(completedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AudioTasksCompanion(')
+          ..write('id: $id, ')
+          ..write('sourcePath: $sourcePath, ')
+          ..write('sourceName: $sourceName, ')
+          ..write('sourceDurationMs: $sourceDurationMs, ')
+          ..write('sourceBitrateKbps: $sourceBitrateKbps, ')
+          ..write('trimStartMs: $trimStartMs, ')
+          ..write('trimEndMs: $trimEndMs, ')
+          ..write('title: $title, ')
+          ..write('artist: $artist, ')
+          ..write('album: $album, ')
+          ..write('coverPath: $coverPath, ')
+          ..write('targetBitrateKbps: $targetBitrateKbps, ')
+          ..write('outputName: $outputName, ')
+          ..write('outputPath: $outputPath, ')
+          ..write('status: $status, ')
+          ..write('progress: $progress, ')
+          ..write('errorMessage: $errorMessage, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('completedAt: $completedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -2929,6 +3997,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $CropPresetsTable cropPresets = $CropPresetsTable(this);
   late final $EditorDraftsTable editorDrafts = $EditorDraftsTable(this);
   late final $AppSettingsTable appSettings = $AppSettingsTable(this);
+  late final $AudioTasksTable audioTasks = $AudioTasksTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2939,6 +4008,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     cropPresets,
     editorDrafts,
     appSettings,
+    audioTasks,
   ];
 }
 
@@ -4410,6 +5480,492 @@ typedef $$AppSettingsTableProcessedTableManager =
       AppSetting,
       PrefetchHooks Function()
     >;
+typedef $$AudioTasksTableCreateCompanionBuilder =
+    AudioTasksCompanion Function({
+      Value<int> id,
+      required String sourcePath,
+      required String sourceName,
+      required int sourceDurationMs,
+      Value<int?> sourceBitrateKbps,
+      required int trimStartMs,
+      required int trimEndMs,
+      Value<String?> title,
+      Value<String?> artist,
+      Value<String?> album,
+      Value<String?> coverPath,
+      required int targetBitrateKbps,
+      required String outputName,
+      Value<String?> outputPath,
+      required String status,
+      Value<int> progress,
+      Value<String?> errorMessage,
+      required int createdAt,
+      Value<int?> completedAt,
+    });
+typedef $$AudioTasksTableUpdateCompanionBuilder =
+    AudioTasksCompanion Function({
+      Value<int> id,
+      Value<String> sourcePath,
+      Value<String> sourceName,
+      Value<int> sourceDurationMs,
+      Value<int?> sourceBitrateKbps,
+      Value<int> trimStartMs,
+      Value<int> trimEndMs,
+      Value<String?> title,
+      Value<String?> artist,
+      Value<String?> album,
+      Value<String?> coverPath,
+      Value<int> targetBitrateKbps,
+      Value<String> outputName,
+      Value<String?> outputPath,
+      Value<String> status,
+      Value<int> progress,
+      Value<String?> errorMessage,
+      Value<int> createdAt,
+      Value<int?> completedAt,
+    });
+
+class $$AudioTasksTableFilterComposer
+    extends Composer<_$AppDatabase, $AudioTasksTable> {
+  $$AudioTasksTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourcePath => $composableBuilder(
+    column: $table.sourcePath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceName => $composableBuilder(
+    column: $table.sourceName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sourceDurationMs => $composableBuilder(
+    column: $table.sourceDurationMs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sourceBitrateKbps => $composableBuilder(
+    column: $table.sourceBitrateKbps,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get trimStartMs => $composableBuilder(
+    column: $table.trimStartMs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get trimEndMs => $composableBuilder(
+    column: $table.trimEndMs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get artist => $composableBuilder(
+    column: $table.artist,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get album => $composableBuilder(
+    column: $table.album,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get coverPath => $composableBuilder(
+    column: $table.coverPath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get targetBitrateKbps => $composableBuilder(
+    column: $table.targetBitrateKbps,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get outputName => $composableBuilder(
+    column: $table.outputName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get outputPath => $composableBuilder(
+    column: $table.outputPath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get progress => $composableBuilder(
+    column: $table.progress,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get errorMessage => $composableBuilder(
+    column: $table.errorMessage,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$AudioTasksTableOrderingComposer
+    extends Composer<_$AppDatabase, $AudioTasksTable> {
+  $$AudioTasksTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourcePath => $composableBuilder(
+    column: $table.sourcePath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourceName => $composableBuilder(
+    column: $table.sourceName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sourceDurationMs => $composableBuilder(
+    column: $table.sourceDurationMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sourceBitrateKbps => $composableBuilder(
+    column: $table.sourceBitrateKbps,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get trimStartMs => $composableBuilder(
+    column: $table.trimStartMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get trimEndMs => $composableBuilder(
+    column: $table.trimEndMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get artist => $composableBuilder(
+    column: $table.artist,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get album => $composableBuilder(
+    column: $table.album,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get coverPath => $composableBuilder(
+    column: $table.coverPath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get targetBitrateKbps => $composableBuilder(
+    column: $table.targetBitrateKbps,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get outputName => $composableBuilder(
+    column: $table.outputName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get outputPath => $composableBuilder(
+    column: $table.outputPath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get progress => $composableBuilder(
+    column: $table.progress,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get errorMessage => $composableBuilder(
+    column: $table.errorMessage,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$AudioTasksTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AudioTasksTable> {
+  $$AudioTasksTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get sourcePath => $composableBuilder(
+    column: $table.sourcePath,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get sourceName => $composableBuilder(
+    column: $table.sourceName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get sourceDurationMs => $composableBuilder(
+    column: $table.sourceDurationMs,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get sourceBitrateKbps => $composableBuilder(
+    column: $table.sourceBitrateKbps,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get trimStartMs => $composableBuilder(
+    column: $table.trimStartMs,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get trimEndMs =>
+      $composableBuilder(column: $table.trimEndMs, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get artist =>
+      $composableBuilder(column: $table.artist, builder: (column) => column);
+
+  GeneratedColumn<String> get album =>
+      $composableBuilder(column: $table.album, builder: (column) => column);
+
+  GeneratedColumn<String> get coverPath =>
+      $composableBuilder(column: $table.coverPath, builder: (column) => column);
+
+  GeneratedColumn<int> get targetBitrateKbps => $composableBuilder(
+    column: $table.targetBitrateKbps,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get outputName => $composableBuilder(
+    column: $table.outputName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get outputPath => $composableBuilder(
+    column: $table.outputPath,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<int> get progress =>
+      $composableBuilder(column: $table.progress, builder: (column) => column);
+
+  GeneratedColumn<String> get errorMessage => $composableBuilder(
+    column: $table.errorMessage,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => column,
+  );
+}
+
+class $$AudioTasksTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $AudioTasksTable,
+          AudioTask,
+          $$AudioTasksTableFilterComposer,
+          $$AudioTasksTableOrderingComposer,
+          $$AudioTasksTableAnnotationComposer,
+          $$AudioTasksTableCreateCompanionBuilder,
+          $$AudioTasksTableUpdateCompanionBuilder,
+          (
+            AudioTask,
+            BaseReferences<_$AppDatabase, $AudioTasksTable, AudioTask>,
+          ),
+          AudioTask,
+          PrefetchHooks Function()
+        > {
+  $$AudioTasksTableTableManager(_$AppDatabase db, $AudioTasksTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AudioTasksTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AudioTasksTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AudioTasksTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> sourcePath = const Value.absent(),
+                Value<String> sourceName = const Value.absent(),
+                Value<int> sourceDurationMs = const Value.absent(),
+                Value<int?> sourceBitrateKbps = const Value.absent(),
+                Value<int> trimStartMs = const Value.absent(),
+                Value<int> trimEndMs = const Value.absent(),
+                Value<String?> title = const Value.absent(),
+                Value<String?> artist = const Value.absent(),
+                Value<String?> album = const Value.absent(),
+                Value<String?> coverPath = const Value.absent(),
+                Value<int> targetBitrateKbps = const Value.absent(),
+                Value<String> outputName = const Value.absent(),
+                Value<String?> outputPath = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<int> progress = const Value.absent(),
+                Value<String?> errorMessage = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int?> completedAt = const Value.absent(),
+              }) => AudioTasksCompanion(
+                id: id,
+                sourcePath: sourcePath,
+                sourceName: sourceName,
+                sourceDurationMs: sourceDurationMs,
+                sourceBitrateKbps: sourceBitrateKbps,
+                trimStartMs: trimStartMs,
+                trimEndMs: trimEndMs,
+                title: title,
+                artist: artist,
+                album: album,
+                coverPath: coverPath,
+                targetBitrateKbps: targetBitrateKbps,
+                outputName: outputName,
+                outputPath: outputPath,
+                status: status,
+                progress: progress,
+                errorMessage: errorMessage,
+                createdAt: createdAt,
+                completedAt: completedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String sourcePath,
+                required String sourceName,
+                required int sourceDurationMs,
+                Value<int?> sourceBitrateKbps = const Value.absent(),
+                required int trimStartMs,
+                required int trimEndMs,
+                Value<String?> title = const Value.absent(),
+                Value<String?> artist = const Value.absent(),
+                Value<String?> album = const Value.absent(),
+                Value<String?> coverPath = const Value.absent(),
+                required int targetBitrateKbps,
+                required String outputName,
+                Value<String?> outputPath = const Value.absent(),
+                required String status,
+                Value<int> progress = const Value.absent(),
+                Value<String?> errorMessage = const Value.absent(),
+                required int createdAt,
+                Value<int?> completedAt = const Value.absent(),
+              }) => AudioTasksCompanion.insert(
+                id: id,
+                sourcePath: sourcePath,
+                sourceName: sourceName,
+                sourceDurationMs: sourceDurationMs,
+                sourceBitrateKbps: sourceBitrateKbps,
+                trimStartMs: trimStartMs,
+                trimEndMs: trimEndMs,
+                title: title,
+                artist: artist,
+                album: album,
+                coverPath: coverPath,
+                targetBitrateKbps: targetBitrateKbps,
+                outputName: outputName,
+                outputPath: outputPath,
+                status: status,
+                progress: progress,
+                errorMessage: errorMessage,
+                createdAt: createdAt,
+                completedAt: completedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$AudioTasksTable, AudioTask>(table),
+                  BaseReferences<_$AppDatabase, $AudioTasksTable, AudioTask>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$AudioTasksTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $AudioTasksTable,
+      AudioTask,
+      $$AudioTasksTableFilterComposer,
+      $$AudioTasksTableOrderingComposer,
+      $$AudioTasksTableAnnotationComposer,
+      $$AudioTasksTableCreateCompanionBuilder,
+      $$AudioTasksTableUpdateCompanionBuilder,
+      (AudioTask, BaseReferences<_$AppDatabase, $AudioTasksTable, AudioTask>),
+      AudioTask,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -4424,4 +5980,6 @@ class $AppDatabaseManager {
       $$EditorDraftsTableTableManager(_db, _db.editorDrafts);
   $$AppSettingsTableTableManager get appSettings =>
       $$AppSettingsTableTableManager(_db, _db.appSettings);
+  $$AudioTasksTableTableManager get audioTasks =>
+      $$AudioTasksTableTableManager(_db, _db.audioTasks);
 }

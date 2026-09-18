@@ -83,6 +83,37 @@ class EditorDrafts extends Table {
   };
 }
 
+/// 音频提取任务
+///
+/// 单表方案：一条记录 = 一次音频转换，输入参数与输出结果同存。
+/// 与视频侧表（VideoItems / ExportTasks）结构上完全隔离。
+class AudioTasks extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get sourcePath => text()();
+  TextColumn get sourceName => text()();
+  IntColumn get sourceDurationMs => integer()();
+  IntColumn get sourceBitrateKbps => integer().nullable()(); // null = 探测不到
+  IntColumn get trimStartMs => integer()();
+  IntColumn get trimEndMs => integer()();
+  TextColumn get title => text().nullable()();
+  TextColumn get artist => text().nullable()();
+  TextColumn get album => text().nullable()();
+  TextColumn get coverPath => text().nullable()();
+  IntColumn get targetBitrateKbps => integer()();
+  TextColumn get outputName => text()();
+  TextColumn get outputPath => text().nullable()();
+  TextColumn get status => text()(); // PENDING/EXPORTING/DONE/FAILED
+  IntColumn get progress => integer().withDefault(const Constant(0))();
+  TextColumn get errorMessage => text().nullable()();
+  IntColumn get createdAt => integer()();
+  IntColumn get completedAt => integer().nullable()();
+
+  Set<Index> get indexes => {
+    Index('idx_audio_tasks_status', 'CREATE INDEX idx_audio_tasks_status ON audio_tasks (status)'),
+    Index('idx_audio_tasks_created', 'CREATE INDEX idx_audio_tasks_created ON audio_tasks (createdAt)'),
+  };
+}
+
 // ==================== Database ====================
 
 @DriftDatabase(tables: [
@@ -91,6 +122,7 @@ class EditorDrafts extends Table {
   CropPresets,
   EditorDrafts,
   AppSettings,
+  AudioTasks,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
@@ -99,7 +131,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTest(super.e);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration {
@@ -116,6 +148,11 @@ class AppDatabase extends _$AppDatabase {
           await m.addColumn(exportTasks, exportTasks.errorMessage);
           // v1 -> v2: 新增 AppSettings 表
           await m.createTable(appSettings);
+        }
+        if (from < 3) {
+          // v2 -> v3: 新增 AudioTasks 表（音频提取功能）
+          // 视频侧表结构不变，旧数据零影响
+          await m.createTable(audioTasks);
         }
       },
     );
@@ -337,6 +374,54 @@ class AppDatabase extends _$AppDatabase {
         errorMessage: errorMessage != null ? Value(errorMessage) : const Value.absent(),
       ),
     );
+  }
+
+  // ==================== v3: AudioTasks DAO ====================
+
+  Future<List<AudioTask>> getAllAudioTasks() async {
+    return await (select(audioTasks)
+      ..orderBy([(t) => OrderingTerm.desc(t.createdAt)])
+    ).get();
+  }
+
+  Future<AudioTask?> getAudioTaskById(int id) async {
+    return await (select(audioTasks)..where((t) => t.id.equals(id)))
+        .getSingleOrNull();
+  }
+
+  Future<int> insertAudioTask(AudioTasksCompanion companion) async {
+    return await into(audioTasks).insert(companion);
+  }
+
+  Future<void> deleteAudioTask(int id) async {
+    await (delete(audioTasks)..where((t) => t.id.equals(id))).go();
+  }
+
+  /// 批量更新音频任务字段（状态/进度/输出路径/完成时间/错误信息）
+  Future<void> updateAudioTaskFull({
+    required int id,
+    String? status,
+    int? progress,
+    String? outputPath,
+    int? completedAt,
+    String? errorMessage,
+  }) async {
+    await (update(audioTasks)..where((t) => t.id.equals(id))).write(
+      AudioTasksCompanion(
+        status: status != null ? Value(status) : const Value.absent(),
+        progress: progress != null ? Value(progress) : const Value.absent(),
+        outputPath: outputPath != null ? Value(outputPath) : const Value.absent(),
+        completedAt: completedAt != null ? Value(completedAt) : const Value.absent(),
+        errorMessage: errorMessage != null ? Value(errorMessage) : const Value.absent(),
+      ),
+    );
+  }
+
+  /// 响应式监听全部音频任务（最近创建的在前）
+  Stream<List<AudioTask>> watchAllAudioTasks() {
+    return (select(audioTasks)
+      ..orderBy([(t) => OrderingTerm.desc(t.createdAt)])
+    ).watch();
   }
 
   // ==================== v2: AppSettings DAO ====================
