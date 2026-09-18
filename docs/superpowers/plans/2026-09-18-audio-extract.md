@@ -2,6 +2,13 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **⚠️ 本文件是历史产物，不是执行权威。** 执行过程中已发现本计划若干处代码/命令有误
+> （内联测试在 fake-async 下不可运行、`await file.exists()` 后的竞态、`Text(widget.x)`
+> 编译错误、失效的索引声明、已移除的 build_runner 参数等），每一处均由控制器裁定后
+> 修正，全部记录在 `.superpowers/sdd/2026-09-18-audio-extract/progress.md` 的
+> `Ruling D*` 条目中。**以该台账与实际代码为准；本文件仅用于理解设计意图。**
+> 正文中凡已标注「裁定 D* 取代本节原文」的区块，一律不要照抄。
+
 **Goal:** 在 CutFlow 的 `feature/video-to-mp3` 分支上实现「选定视频区间 → 提取为 MP3 → 封装封面图与歌名/歌手/专辑 ID3 标签」，并以音频版形态（侧栏仅一个页签）交付。
 
 **Architecture:** 沿用项目既有的 MVVM + Riverpod + Drift 分层。新增独立 `features/audio/` 模块与独立 `AudioTasks` 表（与视频侧表完全隔离）；FFmpeg 侧新增 `buildExtractMp3` 命令构建方法，复用现有 `FfmpegEngine` 执行与进度机制；区间选择直接复用编辑器既有的 `TrimRangeControl` 与 `VideoPreviewPanel` 两个纯 UI 组件。视频相关页签通过集中式导航定义 + `kAudioOnlyMode` 开关隐藏，代码一律保留。
@@ -965,6 +972,21 @@ class AudioTasks extends Table {
 }
 ```
 
+> **注意（2026-09-18 裁定 D19 取代上方代码块中的 `indexes` getter）**：上面这段
+> `Set<Index> get indexes` 是**死代码**，实际落地时已删除，不要照抄。
+> 根因：`get indexes` **不是 drift 的表 API** —— `drift-2.35.0/lib/src/` 中
+> grep 不到该成员；`drift_dev-2.35.0` 的表解析器只识别 `primaryKey` /
+> `uniqueKeys` / `tableName` 三个 getter，没有 `indexes` 分支。正确机制是
+> 类级 `@TableIndex(name:, columns: {#col})` 注解。
+> 因此本项目 `app_database.dart` 里**全部** `Set<Index> get indexes` 声明
+> （视频侧 3 处 + 本表 1 处）从未创建过任何索引。实证：删除该 getter 后
+> 重新生成的 `app_database.g.dart` md5 前后完全一致，且 `allSchemaEntities`
+> 中不含任何 `Index` 实体。
+> 本功能无任何按 `status` 过滤的查询，故裁定**直接删除**而非改用
+> `@TableIndex`（YAGNI；且让索引真正生效需在迁移中显式 `createIndex`，
+> drift 的索引是独立 schema 实体、`createTable` 不携带）。
+> 详见 `.superpowers/sdd/2026-09-18-audio-extract/progress.md` 的裁定 D19。
+
 - [ ] **Step 4: 注册表并升级 schemaVersion**
 
 在 `@DriftDatabase(tables: [...])` 列表末尾追加 `AudioTasks,`：
@@ -1050,7 +1072,13 @@ class AudioTasks extends Table {
 
 - [ ] **Step 7: 重新生成 Drift 代码**
 
-Run: `dart run build_runner build --delete-conflicting-outputs`
+Run: `dart run build_runner build`
+
+> **注意（2026-09-18 修正）**：原命令带的 `--delete-conflicting-outputs` 在
+> build_runner 2.16.1 中**已被移除**，传入只会打印
+> `These options have been removed and were ignored` 告警后照常执行。
+> 使用不带该参数的 `dart run build_runner build`。
+
 Expected: 输出 `Built with build_runner`，`lib/core/database/app_database.g.dart` 中新增 `AudioTask` / `AudioTasksCompanion` / `audioTasks` 访问器
 
 - [ ] **Step 8: 运行测试确认通过**
