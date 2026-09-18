@@ -173,4 +173,89 @@ class FfmpegCommandBuilder {
       outputPath,
     ];
   }
+
+  /// 规整 ID3 标签值
+  ///
+  /// 去首尾空格、换行折为空格。返回 null 表示该标签不写入。
+  /// 注意：参数经 Process.start 以 argv 传递、不经 shell，
+  /// 因此引号/&/| 等字符无需转义，这里只处理 ffmpeg 元数据解析会截断的换行。
+  static String? normalizeTagValue(String? raw) {
+    if (raw == null) return null;
+    final normalized = raw.replaceAll(RegExp(r'[\r\n]+'), ' ').trim();
+    return normalized.isEmpty ? null : normalized;
+  }
+
+  /// 构建「视频 → MP3 + ID3 标签」命令
+  ///
+  /// [startMs]/[endMs] 为提取区间；[coverPath] 为空则不嵌入封面；
+  /// 三个标签为 null/空白时不写入对应 ID3 字段。
+  static List<String> buildExtractMp3({
+    required String inputPath,
+    required String outputPath,
+    required int startMs,
+    required int endMs,
+    required int targetBitrateKbps,
+    String? coverPath,
+    String? title,
+    String? artist,
+    String? album,
+  }) {
+    final startTime = formatForFfmpeg(startMs);
+    final duration = endMs - startMs;
+    final hasCover = coverPath != null && coverPath.isNotEmpty;
+
+    log('CmdBuilder').d('buildExtractMp3: start=$startTime, '
+        'duration=${duration}ms, bitrate=${targetBitrateKbps}k, cover=$hasCover');
+
+    final args = <String>[
+      '-y',
+      '-ss', startTime, // 输入 seek：放在 -i 之前
+      '-i', inputPath,
+    ];
+
+    if (hasCover) {
+      args.addAll(['-i', coverPath]);
+    }
+
+    args.addAll(['-t', formatForFfmpeg(duration)]); // 输出时长限制
+
+    if (hasCover) {
+      args.addAll(['-map', '0:a:0', '-map', '1:v:0']);
+    }
+
+    args.addAll([
+      '-c:a', 'libmp3lame',
+      '-b:a', '${targetBitrateKbps}k',
+    ]);
+
+    if (hasCover) {
+      args.addAll([
+        '-c:v', 'mjpeg', // 统一重编码为 JPEG（MP3 APIC 只认 JPEG/PNG）
+        '-vf', r'scale=w=min(600\,iw):h=-2', // 最长边 600，不放大
+        '-q:v', '3',
+        '-disposition:v', 'attached_pic',
+      ]);
+    }
+
+    args.addAll(['-id3v2_version', '3']); // v2.3：兼容性最优
+
+    final titleValue = normalizeTagValue(title);
+    if (titleValue != null) args.addAll(['-metadata', 'title=$titleValue']);
+
+    final artistValue = normalizeTagValue(artist);
+    if (artistValue != null) args.addAll(['-metadata', 'artist=$artistValue']);
+
+    final albumValue = normalizeTagValue(album);
+    if (albumValue != null) args.addAll(['-metadata', 'album=$albumValue']);
+
+    if (hasCover) {
+      args.addAll([
+        '-metadata:s:v', 'title=Album cover',
+        '-metadata:s:v', 'comment=Cover (front)',
+      ]);
+    }
+
+    args.add(outputPath);
+    return args;
+  }
 }
