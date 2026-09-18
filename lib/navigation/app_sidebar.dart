@@ -1,49 +1,13 @@
 /// 应用侧栏导航组件
 ///
-/// 深色 Slate 900 侧栏，包含 4 个导航目标：
-/// 裁剪、H264 转码、视频分割、设置
+/// 深色 Slate 900 侧栏，导航目标由 nav_destinations.dart 集中定义，按当前模式过滤
 library;
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../main.dart';
 import '../ui/theme/colors.dart';
-
-/// 侧栏导航项数据
-class _NavItem {
-  final String label;
-  final IconData icon;
-  final IconData iconFilled;
-
-  const _NavItem({
-    required this.label,
-    required this.icon,
-    required this.iconFilled,
-  });
-}
-
-const _navItems = [
-  _NavItem(
-    label: '裁剪',
-    icon: Icons.content_cut_outlined,
-    iconFilled: Icons.content_cut,
-  ),
-  _NavItem(
-    label: 'H264 转码',
-    icon: Icons.swap_horiz_outlined,
-    iconFilled: Icons.swap_horiz,
-  ),
-  _NavItem(
-    label: '视频分割',
-    icon: Icons.call_split_outlined,
-    iconFilled: Icons.call_split,
-  ),
-  _NavItem(
-    label: '设置',
-    icon: Icons.settings_outlined,
-    iconFilled: Icons.settings,
-  ),
-];
+import 'nav_destinations.dart';
 
 /// 侧栏 + 内容的整体布局容器
 ///
@@ -111,8 +75,8 @@ class _SidebarContent extends StatelessWidget {
           _SidebarHeader(),
           const SizedBox(height: 8),
           // 导航项列表
-          ...List.generate(_navItems.length, (index) {
-            final item = _navItems[index];
+          ...List.generate(activeDestinations.length, (index) {
+            final item = activeDestinations[index];
             final isSelected = index == selectedIndex;
             return _SidebarNavItem(
               label: item.label,
