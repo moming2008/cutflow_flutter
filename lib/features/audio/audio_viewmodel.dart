@@ -1,0 +1,507 @@
+/// 音频提取页面 ViewModel
+///
+/// 编排「选文件 → 探测音轨 → 选区间 → 填标签 → 转换 → 入库」全流程。
+/// 单文件串行执行，同一时刻至多一个转换在跑。
+library;
+
+import 'dart:async';
+import 'dart:io';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path/path.dart' as p;
+
+import '../../core/ffmpeg/audio_metadata_probe.dart';
+import '../../core/ffmpeg/command_builder.dart';
+import '../../core/ffmpeg/ffmpeg_engine.dart';
+import '../../core/model/audio_source_info.dart';
+import '../../core/model/audio_task.dart';
+import '../../core/repository/app_settings_repository.dart';
+import '../../core/repository/audio_repository.dart';
+import '../../core/util/filename_sanitizer.dart';
+import '../../core/util/logger.dart';
+import '../../main.dart';
+
+/// 目标码率档位（kbps）
+const List<int> kAudioBitrateOptions = [128, 160, 192, 256, 320];
+
+/// 上次选择的码率在 AppSettings 中的键
+const String kAudioTargetBitrateKey = 'audio_target_bitrate';
+
+/// 音频页状态
+class AudioState {
+  final String? sourcePath;
+  final String? sourceName;
+  final int sourceDurationMs;
+  final int trimStartMs;
+  final int trimEndMs;
+  final String title;
+  final String artist;
+  final String album;
+  final String? coverPath;
+  final int targetBitrateKbps;
+  final String? outputDirectory;
+  final AudioSourceInfo? sourceInfo; // null = 尚未探测/探测中
+  final bool isProbing;
+  final bool isConverting;
+  final int progress;
+  final String? error;
+  final String? success;
+
+  const AudioState({
+    this.sourcePath,
+    this.sourceName,
+    this.sourceDurationMs = 0,
+    this.trimStartMs = 0,
+    this.trimEndMs = 0,
+    this.title = '',
+    this.artist = '',
+    this.album = '',
+    this.coverPath,
+    this.targetBitrateKbps = 320,
+    this.outputDirectory,
+    this.sourceInfo,
+    this.isProbing = false,
+    this.isConverting = false,
+    this.progress = 0,
+    this.error,
+    this.success,
+  });
+
+  /// 阻断转换的原因；null = 可以转换
+  String? get blockingError {
+    if (sourcePath == null) return '请先选择视频文件';
+    if (sourceInfo != null && !sourceInfo!.hasAudio) {
+      return '该视频没有音频轨道，无法提取音频';
+    }
+    if (trimEndMs <= trimStartMs) return '出点必须大于入点';
+    return null;
+  }
+
+  bool get canConvert =>
+      blockingError == null && !isConverting && !isProbing;
+
+  /// 输出文件名：歌名优先，回退源文件名；均经非法字符清洗
+  String get outputFileName {
+    final trimmed = title.trim();
+    final raw = trimmed.isNotEmpty
+        ? trimmed
+        : p.basenameWithoutExtension(sourceName ?? '');
+    return '${FilenameSanitizer.sanitize(raw)}.mp3';
+  }
+
+  AudioState copyWith({
+    Object? sourcePath = _sentinel,
+    Object? sourceName = _sentinel,
+    int? sourceDurationMs,
+    int? trimStartMs,
+    int? trimEndMs,
+    String? title,
+    String? artist,
+    String? album,
+    Object? coverPath = _sentinel,
+    int? targetBitrateKbps,
+    Object? outputDirectory = _sentinel,
+    Object? sourceInfo = _sentinel,
+    bool? isProbing,
+    bool? isConverting,
+    int? progress,
+    Object? error = _sentinel,
+    Object? success = _sentinel,
+  }) {
+    return AudioState(
+      sourcePath:
+          sourcePath == _sentinel ? this.sourcePath : sourcePath as String?,
+      sourceName:
+          sourceName == _sentinel ? this.sourceName : sourceName as String?,
+      sourceDurationMs: sourceDurationMs ?? this.sourceDurationMs,
+      trimStartMs: trimStartMs ?? this.trimStartMs,
+      trimEndMs: trimEndMs ?? this.trimEndMs,
+      title: title ?? this.title,
+      artist: artist ?? this.artist,
+      album: album ?? this.album,
+      coverPath: coverPath == _sentinel ? this.coverPath : coverPath as String?,
+      targetBitrateKbps: targetBitrateKbps ?? this.targetBitrateKbps,
+      outputDirectory: outputDirectory == _sentinel
+          ? this.outputDirectory
+          : outputDirectory as String?,
+      sourceInfo: sourceInfo == _sentinel
+          ? this.sourceInfo
+          : sourceInfo as AudioSourceInfo?,
+      isProbing: isProbing ?? this.isProbing,
+      isConverting: isConverting ?? this.isConverting,
+      progress: progress ?? this.progress,
+      error: error == _sentinel ? this.error : error as String?,
+      success: success == _sentinel ? this.success : success as String?,
+    );
+  }
+}
+
+/// copyWith 中用于区分「不传」与「显式传 null」的哨兵
+const Object _sentinel = Object();
+
+class AudioViewModel extends StateNotifier<AudioState> {
+  final AudioRepository _repository;
+  final AppSettingsRepository _settings;
+
+  FfmpegEngine? _currentEngine;
+  int? _currentTaskId;
+
+  /// 本次转换**去重后**的实际输出路径（取消/失败时据此清理半成品文件）
+  String? _currentOutputPath;
+
+  AudioViewModel(this._repository, this._settings)
+      : super(const AudioState()) {
+    _restorePreferences();
+  }
+
+  /// 读取记忆的目标码率与默认输出目录
+  Future<void> _restorePreferences() async {
+    try {
+      final savedBitrate = await _settings.getSetting(kAudioTargetBitrateKey);
+      final bitrate = int.tryParse(savedBitrate ?? '');
+      final outputDir = await _settings.getExportDirectory();
+      state = state.copyWith(
+        targetBitrateKbps:
+            bitrate != null && kAudioBitrateOptions.contains(bitrate)
+                ? bitrate
+                : null,
+        outputDirectory: outputDir,
+      );
+    } catch (e) {
+      log('AudioVM').e('Failed to restore preferences', error: e);
+    }
+  }
+
+  /// 选择源视频 → 重置区间 → 异步探测音轨
+  Future<void> setSourceFile(String path) async {
+    final name = p.basename(path);
+    state = state.copyWith(
+      sourcePath: path,
+      sourceName: name,
+      sourceDurationMs: 0,
+      trimStartMs: 0,
+      trimEndMs: 0,
+      sourceInfo: null,
+      isProbing: true,
+      isConverting: false,
+      progress: 0,
+      error: null,
+      success: null,
+    );
+    log('AudioVM').i('Source selected: $path');
+
+    final info = await AudioMetadataProbe.probe(path);
+    // 探测期间用户可能又换了文件，此处校验路径未被替换
+    if (!mounted || state.sourcePath != path) return;
+
+    state = state.copyWith(
+      sourceInfo: info,
+      isProbing: false,
+      sourceDurationMs: info.durationMs,
+      trimEndMs: info.durationMs > 0 ? info.durationMs : 0,
+    );
+  }
+
+  void setTrimStart(int ms) {
+    final clamped = ms.clamp(0, state.sourceDurationMs);
+    if (clamped == state.trimStartMs) return;
+    state = state.copyWith(trimStartMs: clamped, error: null);
+  }
+
+  void setTrimEnd(int ms) {
+    final clamped = ms.clamp(0, state.sourceDurationMs);
+    if (clamped == state.trimEndMs) return;
+    state = state.copyWith(trimEndMs: clamped, error: null);
+  }
+
+  /// 「快退」/「快进」按固定步长移动入点
+  void stepStart(int deltaMs) => setTrimStart(state.trimStartMs + deltaMs);
+
+  /// 「快退」/「快进」按固定步长移动出点
+  void stepEnd(int deltaMs) => setTrimEnd(state.trimEndMs + deltaMs);
+
+  void setTitle(String value) => state = state.copyWith(title: value);
+  void setArtist(String value) => state = state.copyWith(artist: value);
+  void setAlbum(String value) => state = state.copyWith(album: value);
+
+  void setCoverPath(String? path) =>
+      state = state.copyWith(coverPath: path, error: null);
+
+  Future<void> setTargetBitrate(int kbps) async {
+    state = state.copyWith(targetBitrateKbps: kbps);
+    try {
+      await _settings.setSetting(kAudioTargetBitrateKey, kbps.toString());
+    } catch (e) {
+      log('AudioVM').e('Failed to persist bitrate', error: e);
+    }
+  }
+
+  void setOutputDirectory(String dir) =>
+      state = state.copyWith(outputDirectory: dir);
+
+  void clearMessages() =>
+      state = state.copyWith(error: null, success: null);
+
+  /// 开始转换
+  Future<void> startConversion() async {
+    final blocked = state.blockingError;
+    if (blocked != null) {
+      state = state.copyWith(error: blocked);
+      return;
+    }
+
+    final sourcePath = state.sourcePath!;
+    final outputDir = state.outputDirectory;
+    if (outputDir == null || outputDir.isEmpty) {
+      state = state.copyWith(error: '未设置输出目录');
+      return;
+    }
+
+    state = state.copyWith(
+      isConverting: true,
+      progress: 0,
+      error: null,
+      success: null,
+    );
+
+    final trimStart = state.trimStartMs;
+    final trimEnd = state.trimEndMs;
+    final duration = trimEnd - trimStart;
+
+    try {
+      // 1. 源文件二次校验
+      if (!await File(sourcePath).exists()) {
+        state = state.copyWith(isConverting: false, error: '源文件不存在');
+        return;
+      }
+
+      // 2. 封面文件校验（选了才校验）
+      final coverPath = state.coverPath;
+      if (coverPath != null &&
+          coverPath.isNotEmpty &&
+          !await File(coverPath).exists()) {
+        state = state.copyWith(isConverting: false, error: '封面图片不存在，请重新选择');
+        return;
+      }
+
+      // 3. 确保输出目录存在
+      final dir = Directory(outputDir);
+      if (!await dir.exists()) {
+        await dir.create(recursive: true);
+      }
+
+      // 4. 输出路径去重
+      final outputPath = await _resolveOutputPath(outputDir, state.outputFileName);
+
+      // 5. 入库（状态 PENDING）
+      final taskId = await _repository.insertTask(AudioTask(
+        id: 0,
+        sourcePath: sourcePath,
+        sourceName: state.sourceName ?? p.basename(sourcePath),
+        sourceDurationMs: state.sourceDurationMs,
+        sourceBitrateKbps: state.sourceInfo?.bitrateKbps,
+        trimStartMs: trimStart,
+        trimEndMs: trimEnd,
+        title: _nullIfBlank(state.title),
+        artist: _nullIfBlank(state.artist),
+        album: _nullIfBlank(state.album),
+        coverPath: coverPath,
+        targetBitrateKbps: state.targetBitrateKbps,
+        outputName: state.outputFileName,
+        status: AudioTaskStatus.pending,
+        progress: 0,
+        createdAt: DateTime.now().millisecondsSinceEpoch,
+      ));
+      _currentTaskId = taskId;
+      _currentOutputPath = outputPath;
+
+      // 6. 构建命令
+      final command = FfmpegCommandBuilder.buildExtractMp3(
+        inputPath: sourcePath,
+        outputPath: outputPath,
+        startMs: trimStart,
+        endMs: trimEnd,
+        targetBitrateKbps: state.targetBitrateKbps,
+        coverPath: coverPath,
+        title: state.title,
+        artist: state.artist,
+        album: state.album,
+      );
+
+      await _repository.updateTaskFull(
+          id: taskId, status: 'EXPORTING', progress: 0);
+
+      // 7. 执行（进度基准 = 输出时长）
+      final engine = FfmpegEngine();
+      _currentEngine = engine;
+
+      await for (final progress in engine.executeWithProgress(
+        command: command,
+        totalDurationMs: duration,
+      )) {
+        if (!mounted) return;
+
+        if (progress.hasError) {
+          _currentEngine = null;
+          final message = progress.error == 'Cancelled by user'
+              ? '已取消'
+              : '转换失败: ${progress.error}';
+          await _handleFailure(
+            taskId: taskId,
+            outputPath: outputPath,
+            message: message,
+            cancelled: progress.error == 'Cancelled by user',
+          );
+          return;
+        }
+
+        state = state.copyWith(progress: progress.progress);
+        await _repository.updateTaskFull(
+            id: taskId, progress: progress.progress);
+      }
+
+      _currentEngine = null;
+      _currentTaskId = null;
+      _currentOutputPath = null;
+
+      await _repository.updateTaskFull(
+        id: taskId,
+        status: 'DONE',
+        progress: 100,
+        outputPath: outputPath,
+        completedAt: DateTime.now().millisecondsSinceEpoch,
+      );
+
+      state = state.copyWith(
+        isConverting: false,
+        progress: 100,
+        success: '转换完成: $outputPath',
+      );
+      log('AudioVM').i('Conversion done: $outputPath');
+    } catch (e) {
+      _currentEngine = null;
+      log('AudioVM').e('Conversion failed', error: e);
+      final taskId = _currentTaskId;
+      _currentTaskId = null;
+      _currentOutputPath = null;
+      if (taskId != null) {
+        await _repository.updateTaskFull(
+            id: taskId, status: 'FAILED', errorMessage: e.toString());
+      }
+      state = state.copyWith(isConverting: false, error: '转换失败: $e');
+    }
+  }
+
+  /// 取消转换：杀进程 + 删半成品文件 + 删任务记录
+  Future<void> cancelConversion() async {
+    final taskId = _currentTaskId;
+    final outputPath = _currentOutputPath;
+    final engine = _currentEngine;
+    if (engine == null) return;
+
+    await engine.cancel();
+    _currentEngine = null;
+    _currentTaskId = null;
+    _currentOutputPath = null;
+
+    // 删任务记录 + 清半成品文件（用去重后的真实路径）
+    if (taskId != null) {
+      await _repository.deleteTask(taskId);
+    }
+    await _deleteFileQuietly(outputPath);
+
+    if (!mounted) return;
+    state = state.copyWith(isConverting: false, progress: 0, error: '已取消');
+  }
+
+  /// 把一条失败记录的参数回填到表单，供用户修正后重试
+  void restoreFromTask(AudioTask task) {
+    state = state.copyWith(
+      sourcePath: task.sourcePath,
+      sourceName: task.sourceName,
+      sourceDurationMs: task.sourceDurationMs,
+      trimStartMs: task.trimStartMs,
+      trimEndMs: task.trimEndMs,
+      title: task.title ?? '',
+      artist: task.artist ?? '',
+      album: task.album ?? '',
+      coverPath: task.coverPath,
+      targetBitrateKbps: task.targetBitrateKbps,
+      error: null,
+      success: null,
+    );
+  }
+
+  Future<void> _handleFailure({
+    required int taskId,
+    required String outputPath,
+    required String message,
+    required bool cancelled,
+  }) async {
+    _currentTaskId = null;
+    _currentOutputPath = null;
+
+    if (cancelled) {
+      await _repository.deleteTask(taskId);
+    } else {
+      await _repository.updateTaskFull(
+          id: taskId, status: 'FAILED', errorMessage: message);
+    }
+
+    // 清理半成品文件（用去重后的真实路径）
+    await _deleteFileQuietly(outputPath);
+
+    if (!mounted) return;
+    state = state.copyWith(
+      isConverting: false,
+      progress: 0,
+      error: message,
+    );
+  }
+
+  /// 尽力删除文件：失败只记日志，不阻断调用方流程
+  ///
+  /// 文件可能已被用户手动移走或正被占用，此处卡住反而更糟。
+  static Future<void> _deleteFileQuietly(String? path) async {
+    if (path == null || path.isEmpty) return;
+    try {
+      final file = File(path);
+      if (await file.exists()) await file.delete();
+    } catch (e) {
+      log('AudioVM').w('Failed to delete file: $path', error: e);
+    }
+  }
+
+  /// 输出路径去重：重名时追加 _1 / _2 …
+  Future<String> _resolveOutputPath(String dir, String fileName) async {
+    var candidate = p.join(dir, fileName);
+    if (!await File(candidate).exists()) return candidate;
+
+    final base = p.basenameWithoutExtension(fileName);
+    final ext = p.extension(fileName);
+    var counter = 1;
+    while (await File(candidate).exists()) {
+      candidate = p.join(dir, '${base}_$counter$ext');
+      counter++;
+    }
+    return candidate;
+  }
+
+  static String? _nullIfBlank(String value) {
+    final trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
+}
+
+/// 音频页 ViewModel Provider
+final audioProvider = StateNotifierProvider<AudioViewModel, AudioState>((ref) {
+  return AudioViewModel(
+    AudioRepository(database),
+    AppSettingsRepository(database),
+  );
+});
+
+/// 转换记录（响应式）
+final audioRecordsProvider = StreamProvider<List<AudioTask>>((ref) {
+  return AudioRepository(database).watchAllTasks();
+});
