@@ -34,8 +34,10 @@ void main() {
       database = AppDatabase.forTest(NativeDatabase.memory());
     });
 
-    tearDown(() {
-      database.close();
+    // 必须 await：close() 抛出的异常若无人接管会变成未处理的异步错误，
+    // 而且失败的用例会把连接泄漏给下一个 setUp
+    tearDown(() async {
+      await database.close();
     });
 
     test('插入并读回音频任务', () async {

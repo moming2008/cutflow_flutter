@@ -3,12 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cutflow_flutter/core/database/app_database.dart';
+// drift 生成的 AudioTask 与领域模型同名，这里只取 AppDatabase，
+// 显式隐藏数据库侧的 AudioTask 以免命名冲突
+import 'package:cutflow_flutter/core/database/app_database.dart' hide AudioTask;
 import 'package:cutflow_flutter/core/model/audio_source_info.dart';
+import 'package:cutflow_flutter/core/model/audio_task.dart';
 import 'package:cutflow_flutter/core/repository/app_settings_repository.dart';
 import 'package:cutflow_flutter/core/repository/audio_repository.dart';
 import 'package:cutflow_flutter/features/audio/audio_screen.dart';
 import 'package:cutflow_flutter/features/audio/audio_viewmodel.dart';
+import 'package:cutflow_flutter/features/audio/widgets/audio_record_tile.dart';
 import 'package:cutflow_flutter/features/editor/widgets/trim_range_control.dart';
 import 'package:cutflow_flutter/features/editor/widgets/video_preview_panel.dart';
 
@@ -31,7 +35,8 @@ void main() {
   /// 不覆盖的话，构造 audioProvider 会读到从未初始化的
   /// `late AppDatabase database` 并抛 LateInitializationError。
   /// [seed] 用于铺「已选好文件」这类前置状态（选文件会触发 ffprobe，测试里不能真跑）。
-  Widget buildApp({AudioState? seed}) {
+  /// [records] 直接给定记录列表；不传时走内存库（与生产一致的空列表）。
+  Widget buildApp({AudioState? seed, List<AudioTask>? records}) {
     vm = SeedableAudioViewModel(
       AudioRepository(testDb),
       AppSettingsRepository(testDb),
@@ -41,8 +46,11 @@ void main() {
     return ProviderScope(
       overrides: [
         audioProvider.overrideWith((ref) => vm),
-        audioRecordsProvider
-            .overrideWith((ref) => AudioRepository(testDb).watchAllTasks()),
+        audioRecordsProvider.overrideWith(
+          (ref) => records != null
+              ? Stream.value(records)
+              : AudioRepository(testDb).watchAllTasks(),
+        ),
       ],
       child: const MaterialApp(home: AudioScreen()),
     );
@@ -273,6 +281,70 @@ void main() {
       equals('/nope/other.mp4'),
     );
     expect(renderedPosition(tester), equals(0));
+  });
+
+  /// 一条失败记录：记录行上同时有「回填参数重试」与「删除」两个动作
+  ///
+  /// 打开产物需要真实文件存在（`File(...).existsSync()`），而 testWidgets 的
+  /// 伪时钟下真实文件 I/O 不会推进，故这里只钉两个动作按钮；
+  /// 「打开」不受转换状态约束由 audio_record_tile_test.dart 覆盖。
+  AudioTask failedRecord() => AudioTask(
+        id: 1,
+        sourcePath: '/nope/video.mp4',
+        sourceName: 'video.mp4',
+        sourceDurationMs: 60000,
+        trimStartMs: 0,
+        trimEndMs: 60000,
+        title: '晴天',
+        artist: '周杰伦',
+        album: '叶惠美',
+        targetBitrateKbps: 320,
+        outputName: '晴天.mp3',
+        status: AudioTaskStatus.failed,
+        progress: 0,
+        errorMessage: '转换失败: 磁盘已满',
+        createdAt: 0,
+      );
+
+  /// 记录行里带该图标的 IconButton（onPressed == null 即禁用态；
+  /// AppBar 的「选择视频」是 ElevatedButton，不会被这里选中）
+  IconButton tileButton(WidgetTester tester, IconData icon) => tester.widget(
+        find.descendant(
+          of: find.byType(AudioRecordTile),
+          matching: find.widgetWithIcon(IconButton, icon),
+        ),
+      );
+
+  // ViewModel 只允许一个转换在跑；列表若不跟着禁用，用户就能删掉在飞的那一行
+  // （它收尾的 DONE 更新会打到 0 行，留下一条没有对应记录的「转换完成」），
+  // 或把表单回填到正在跑的转换底下。
+  screenTest('转换进行中禁用记录行的重试与删除', (tester) async {
+    await tester.pumpWidget(
+      buildApp(
+        seed: selectedSource().copyWith(isConverting: true),
+        records: [failedRecord()],
+      ),
+    );
+    await tester.pump();
+
+    // 先钉住这一行确实渲染了，否则「按钮不存在」会让下面的断言假通过
+    expect(find.byType(AudioRecordTile), findsOneWidget);
+
+    expect(tileButton(tester, Icons.refresh).onPressed, isNull);
+    expect(tileButton(tester, Icons.delete_outline).onPressed, isNull);
+  });
+
+  // 反过来钉住「禁用是跟着 isConverting 走的」：不是无条件禁用
+  screenTest('未在转换时记录行的重试与删除可用', (tester) async {
+    await tester.pumpWidget(
+      buildApp(seed: selectedSource(), records: [failedRecord()]),
+    );
+    await tester.pump();
+
+    expect(find.byType(AudioRecordTile), findsOneWidget);
+
+    expect(tileButton(tester, Icons.refresh).onPressed, isNotNull);
+    expect(tileButton(tester, Icons.delete_outline).onPressed, isNotNull);
   });
 
   // 探测中入点/出点都还是 0，此时报「出点必须大于入点」是误导

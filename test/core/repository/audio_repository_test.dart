@@ -37,7 +37,9 @@ void main() {
     repo = AudioRepository(db);
   });
 
-  tearDown(() => db.close());
+  // 与 orchestration 用例一致：close() 的 Future 不能丢，否则关闭期的异常
+  // 会变成未处理的异步错误，失败的用例还会把连接泄漏给下一个 setUp
+  tearDown(() async => await db.close());
 
   test('插入并读回，状态枚举往返正确', () async {
     final id = await repo.insertTask(_task());

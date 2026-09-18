@@ -439,12 +439,15 @@ class AudioViewModel extends StateNotifier<AudioState> {
           log('AudioVM').e('Failed to mark task as FAILED', error: dbError);
         }
       }
-      // 文件已产出但落库失败时，说「转换失败」是误导：产物确实在磁盘上，
-      // 而历史列表里又查不到，必须明确告诉用户去哪找
+      // 文件已产出、只有收尾那次落库失败时，说「记录写入失败」也是误导：
+      // 记录并不存在丢失问题——它在列表里，只是仍停留在「导出中」，
+      // 失败的是那一次状态更新。产物确实在磁盘上，必须明确告诉用户去哪找。
+      // 结论仍按失败呈现（走 error 通道），因为记录状态已经不对了。
       state = state.copyWith(
         isConverting: false,
         error: producedOutputPath != null
-            ? '转换已完成但记录写入失败，文件位于：$producedOutputPath'
+            ? '转换已完成，但记录状态更新失败（记录仍停留在「导出中」），'
+                '文件位于：$producedOutputPath'
             : '转换失败: $e',
       );
     }
@@ -517,15 +520,25 @@ class AudioViewModel extends StateNotifier<AudioState> {
     _currentTaskId = null;
     _currentOutputPath = null;
 
-    if (cancelled) {
-      await _repository.deleteTask(taskId);
-    } else {
-      await _repository.updateTaskFull(
-          id: taskId, status: 'FAILED', errorMessage: message);
+    // 把产物路径另存为局部量：下面两次落库都可能抛，异常若逃出本方法就会
+    // 落到 startConversion 的 catch，而那时字段已被清空、半成品文件再也找不回来
+    final producedPath = outputPath;
+
+    try {
+      if (cancelled) {
+        await _repository.deleteTask(taskId);
+      } else {
+        await _repository.updateTaskFull(
+            id: taskId, status: 'FAILED', errorMessage: message);
+      }
+    } catch (e) {
+      // 与 startConversion 外层 catch 同理：这里吞掉异常，
+      // 否则它既会顶掉下面要展示的失败原因，也会顶掉文件的清理
+      log('AudioVM').e('Failed to update task on failure', error: e);
     }
 
     // 清理半成品文件（用去重后的真实路径）
-    await _deleteFileQuietly(outputPath);
+    await _deleteFileQuietly(producedPath);
 
     if (!mounted) return;
     state = state.copyWith(

@@ -148,7 +148,7 @@ class _AudioScreenState extends ConsumerState<AudioScreen> {
             const SizedBox(height: 12),
             const Divider(height: 1, color: AppColors.divider),
             const SizedBox(height: 8),
-            _buildRecords(records, notifier),
+            _buildRecords(records, notifier, state.isConverting),
           ],
         ),
       ),
@@ -418,6 +418,7 @@ class _AudioScreenState extends ConsumerState<AudioScreen> {
   Widget _buildRecords(
     AsyncValue<List<AudioTask>> records,
     AudioViewModel notifier,
+    bool isConverting,
   ) {
     return SizedBox(
       height: 180,
@@ -443,13 +444,22 @@ class _AudioScreenState extends ConsumerState<AudioScreen> {
               return AudioRecordTile(
                 task: task,
                 fileExists: outputPath != null && File(outputPath).existsSync(),
+                // 打开产物文件不碰 ViewModel，转换中看已完成的结果是安全的，
+                // 故不随 isConverting 禁用
                 onOpen: () {
                   if (outputPath != null) {
                     ExplorerService.openFileLocation(outputPath);
                   }
                 },
-                onRetry: () => notifier.restoreFromTask(task),
-                onDelete: () => _confirmDelete(task, notifier),
+                // 转换中禁掉重试与删除：重试会把表单回填到一次正在跑的转换底下，
+                // 删除若落在在飞的那一行上，它收尾的 DONE 更新会打到 0 行——
+                // 留下一条「转换完成」提示，列表里却没有任何对应记录
+                onRetry: isConverting
+                    ? null
+                    : () => notifier.restoreFromTask(task),
+                onDelete: isConverting
+                    ? null
+                    : () => _confirmDelete(task, notifier),
               );
             },
           );

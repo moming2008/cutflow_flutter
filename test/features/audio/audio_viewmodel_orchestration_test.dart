@@ -14,11 +14,15 @@ import 'package:cutflow_flutter/features/audio/audio_viewmodel.dart';
 
 import 'support/seedable_audio_viewmodel.dart';
 
-/// 覆盖 AudioViewModel 中**不需要 ffmpeg** 的那部分编排：
-/// 输出路径去重、校验早退、记录回填、取消守卫、记录删除。
+/// 覆盖 AudioViewModel 中**不需要真实转换产物**的那部分编排：
+/// 输出路径去重、校验早退、记录回填、取消守卫、记录删除、失败收尾落库。
 ///
-/// 其余部分（真实执行 ffmpeg 的进度/失败/取消分支、DONE 落库失败时的消息区分）
-/// 无法在测试中启动外部进程，只能靠阅读与 Task 9 的端到端人工验收。
+/// 唯一会真正启动 ffmpeg 的是「失败收尾落库失败」那条：它的错误分支只能由引擎
+/// 的 error 进度触发。用的是一份假视频，ffmpeg 会立刻以非零码退出；
+/// 若机器上没有 ffmpeg，引擎改为产出「FFmpeg not found」，同样落在 error 分支上，
+/// 断言因此与 ffmpeg 是否安装无关。
+///
+/// 仍未覆盖的是 DONE 落库失败时的消息区分（那条要求转换**成功**产出文件）。
 void main() {
   late db.AppDatabase testDb;
   late AudioRepository repository;
@@ -156,6 +160,37 @@ void main() {
 
       expect(viewModel.state.isConverting, isTrue);
       expect(viewModel.state.error, isNull);
+    });
+  });
+
+  group('_handleFailure 收尾落库', () {
+    // 失败收尾那次落库自身也会抛（库被关闭、磁盘满等）。它必须被吞掉：
+    // 一旦逃出 _handleFailure，展示给用户的原因会被库异常顶掉，
+    // 而且已经置空的路径字段会让半成品文件再也删不掉。
+    test('收尾落库失败时不改写失败原因', () async {
+      // 内容无所谓的假视频：只要文件存在就能走过前置校验，由 ffmpeg 判失败
+      final source = File(p.join(workDir.path, 'video.mp4'));
+      await source.writeAsString('not a real video');
+
+      final failingRepository = _FailingFinalUpdateRepository(testDb);
+      final viewModel = SeedableAudioViewModel(
+        failingRepository,
+        AppSettingsRepository(testDb),
+      );
+      await pumpEventQueue();
+      viewModel.seed(seededState(
+        sourcePath: source.path,
+        outputDirectory: workDir.path,
+      ));
+
+      await viewModel.startConversion();
+
+      // 落库确实被尝试过（否则本用例可能根本没走到那条分支）
+      expect(failingRepository.failedWriteAttempted, isTrue);
+      // 用户看到的必须是转换本身的失败原因，而不是库异常
+      expect(viewModel.state.error, startsWith('转换失败: '));
+      expect(viewModel.state.error, isNot(contains('库炸了')));
+      expect(viewModel.state.isConverting, isFalse);
     });
   });
 
@@ -297,4 +332,35 @@ void main() {
       expect(await repository.getTaskById(id), isNull);
     });
   });
+}
+
+/// 让「标记 FAILED」那一次落库失败，用于把 _handleFailure 推到抛异常的分支
+class _FailingFinalUpdateRepository extends AudioRepository {
+  _FailingFinalUpdateRepository(super._db);
+
+  /// 是否真的尝试过写 FAILED（只证明调用发生过，不代表写得成功）
+  bool failedWriteAttempted = false;
+
+  @override
+  Future<void> updateTaskFull({
+    required int id,
+    String? status,
+    int? progress,
+    String? outputPath,
+    int? completedAt,
+    String? errorMessage,
+  }) {
+    if (status == 'FAILED') {
+      failedWriteAttempted = true;
+      throw Exception('库炸了');
+    }
+    return super.updateTaskFull(
+      id: id,
+      status: status,
+      progress: progress,
+      outputPath: outputPath,
+      completedAt: completedAt,
+      errorMessage: errorMessage,
+    );
+  }
 }
