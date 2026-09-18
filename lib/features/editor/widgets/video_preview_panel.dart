@@ -27,8 +27,15 @@ class VideoPreviewPanel extends StatefulWidget {
 }
 
 class VideoPreviewPanelState extends State<VideoPreviewPanel> {
-  late final Player _player;
-  late final VideoController _videoController;
+  late Player _player;
+  late VideoController _videoController;
+
+  /// 是否已创建过 Player（决定 dispose 时是否需要释放）
+  bool _playerInitialized = false;
+
+  /// 防止快速切换文件时旧的异步初始化覆盖新的
+  int _loadToken = 0;
+
   bool _isInitialized = false;
   String? _error;
   int _currentPositionMs = 0;
@@ -47,16 +54,45 @@ class VideoPreviewPanelState extends State<VideoPreviewPanel> {
     _initPlayer();
   }
 
+  @override
+  void didUpdateWidget(covariant VideoPreviewPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 切换到另一个文件时重建播放器；同路径的不同 VideoItem 实例不触发
+    if (oldWidget.video.path != widget.video.path) {
+      log('VideoPreview').i(
+          'Source changed: ${oldWidget.video.path} -> ${widget.video.path}');
+      _initPlayer();
+    }
+  }
+
   Future<void> _initPlayer() async {
+    final token = ++_loadToken;
+
+    // 释放上一个播放器（切文件时）
+    // 注意：先清标记再 await —— Player.dispose() 重复调用会抛 AssertionError，
+    // 快速连续切文件时后一次调用不能再次释放同一个实例
+    if (_playerInitialized) {
+      _playerInitialized = false;
+      await _player.dispose();
+    }
+    if (token != _loadToken) return; // 期间又切了文件，本次作废
+
+    _isInitialized = false;
+    _error = null;
+    _currentPositionMs = 0;
+
     final file = File(widget.video.path);
     if (!await file.exists()) {
-      setState(() => _error = '视频文件不存在: ${widget.video.path}');
       log('VideoPreview').e('File not found: ${widget.video.path}');
+      if (mounted && token == _loadToken) {
+        setState(() => _error = '视频文件不存在: ${widget.video.path}');
+      }
       return;
     }
 
     try {
       _player = Player();
+      _playerInitialized = true;
       _videoController = VideoController(_player);
 
       // 监听播放位置变化
@@ -78,16 +114,17 @@ class VideoPreviewPanelState extends State<VideoPreviewPanel> {
 
       // 打开视频文件
       await _player.open(Media(widget.video.path));
+      if (token != _loadToken) return; // 打开期间又切了文件，本次作废
       // 打开后暂停，不自动播放
       await _player.pause();
       log('VideoPreview').i('Video opened: ${widget.video.name}');
 
-      if (mounted) {
+      if (mounted && token == _loadToken) {
         setState(() => _isInitialized = true);
       }
     } catch (e, stack) {
       log('VideoPreview').e('Failed to initialize player', error: e, stackTrace: stack);
-      if (mounted) {
+      if (mounted && token == _loadToken) {
         setState(() => _error = '播放器初始化失败: $e');
       }
     }
@@ -95,7 +132,10 @@ class VideoPreviewPanelState extends State<VideoPreviewPanel> {
 
   @override
   void dispose() {
-    _player.dispose();
+    _loadToken++; // 让在途的初始化作废，避免 dispose 后再 setState
+    if (_playerInitialized) {
+      _player.dispose();
+    }
     super.dispose();
   }
 

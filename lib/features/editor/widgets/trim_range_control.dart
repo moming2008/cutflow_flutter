@@ -24,6 +24,12 @@ class TrimRangeControl extends StatelessWidget {
   final VoidCallback onStepForward;
   final VoidCallback onStepBackward;
 
+  /// 步退按钮文案（默认「逐帧向前」，音频场景传「快退 1s」）
+  final String stepBackwardLabel;
+
+  /// 步进按钮文案（默认「逐帧向后」，音频场景传「快进 1s」）
+  final String stepForwardLabel;
+
   const TrimRangeControl({
     super.key,
     required this.durationMs,
@@ -38,6 +44,8 @@ class TrimRangeControl extends StatelessWidget {
     required this.frameRate,
     required this.onStepForward,
     required this.onStepBackward,
+    this.stepBackwardLabel = '逐帧向前',
+    this.stepForwardLabel = '逐帧向后',
   });
 
   int get _trimDuration {
@@ -163,7 +171,7 @@ class TrimRangeControl extends StatelessWidget {
               child: OutlinedButton.icon(
                 onPressed: onStepBackward,
                 icon: const Icon(Icons.skip_previous, size: 14),
-                label: const Text('逐帧向前'),
+                label: Text(stepBackwardLabel),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.textSecondary,
                   side: const BorderSide(color: AppColors.outline),
@@ -177,7 +185,7 @@ class TrimRangeControl extends StatelessWidget {
               child: OutlinedButton.icon(
                 onPressed: onStepForward,
                 icon: const Icon(Icons.skip_next, size: 14),
-                label: const Text('逐帧向后'),
+                label: Text(stepForwardLabel),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.textSecondary,
                   side: const BorderSide(color: AppColors.outline),
