@@ -206,15 +206,25 @@ class AudioViewModel extends StateNotifier<AudioState> {
   ///
   /// [setSourceFile] 与 [restoreFromTask] 共用。探测期间用户可能又换了文件、
   /// 或又恢复了另一条记录，故写入前校验路径仍是当初那一个。
-  Future<void> _probeSource(String path) async {
+  ///
+  /// [keepTrimEndMs] 非空时保留该出点（用于从历史记录回填重试，
+  /// 避免把用户原先选的区间悄悄改成全片），但仍会按探测到的
+  /// 实际时长做钳制，以防源文件已被替换成更短的版本。
+  Future<void> _probeSource(String path, {int? keepTrimEndMs}) async {
     final info = await AudioMetadataProbe.probe(path);
     if (!mounted || state.sourcePath != path) return;
+
+    // 出点：默认拉到全片；回填重试时保留记录里的出点并按时长钳制。
+    // 探测不到有效时长（时长 0）时沿用原行为置 0。
+    final endMs = info.durationMs > 0
+        ? (keepTrimEndMs ?? info.durationMs).clamp(0, info.durationMs)
+        : 0;
 
     state = state.copyWith(
       sourceInfo: info,
       isProbing: false,
       sourceDurationMs: info.durationMs,
-      trimEndMs: info.durationMs > 0 ? info.durationMs : 0,
+      trimEndMs: endMs,
     );
   }
 
@@ -292,6 +302,10 @@ class AudioViewModel extends StateNotifier<AudioState> {
     final trimStart = state.trimStartMs;
     final trimEnd = state.trimEndMs;
     final duration = trimEnd - trimStart;
+
+    // 转换是否已产出文件：DONE 落库失败时据此区分
+    // 「转换本身失败」与「转换成功但记录没写成」
+    String? producedOutputPath;
 
     try {
       // 1. 源文件二次校验
@@ -389,6 +403,7 @@ class AudioViewModel extends StateNotifier<AudioState> {
       _currentEngine = null;
       _currentTaskId = null;
       _currentOutputPath = null;
+      producedOutputPath = outputPath; // 流循环正常结束即文件已产出
 
       await _repository.updateTaskFull(
         id: taskId,
@@ -421,7 +436,14 @@ class AudioViewModel extends StateNotifier<AudioState> {
           log('AudioVM').e('Failed to mark task as FAILED', error: dbError);
         }
       }
-      state = state.copyWith(isConverting: false, error: '转换失败: $e');
+      // 文件已产出但落库失败时，说「转换失败」是误导：产物确实在磁盘上，
+      // 而历史列表里又查不到，必须明确告诉用户去哪找
+      state = state.copyWith(
+        isConverting: false,
+        error: producedOutputPath != null
+            ? '转换已完成但记录写入失败，文件位于：$producedOutputPath'
+            : '转换失败: $e',
+      );
     }
   }
 
@@ -469,7 +491,9 @@ class AudioViewModel extends StateNotifier<AudioState> {
       error: null,
       success: null,
     );
-    unawaited(_probeSource(task.sourcePath));
+    // 保留记录里的出点：本方法的用途是「回填参数后重试」，
+    // 把区间悄悄放宽到全片会让重试产出与失败那次不同的文件
+    unawaited(_probeSource(task.sourcePath, keepTrimEndMs: task.trimEndMs));
   }
 
   Future<void> _handleFailure({
