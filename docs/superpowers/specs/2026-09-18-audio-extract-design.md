@@ -338,18 +338,18 @@ class NavDestination {
 }
 
 const kNavDestinations = <NavDestination>[
-  NavDestination(label: '音频',      path: '/audio',     audioOnly: true,  ...),  // audioOnly: true
   NavDestination(label: '裁剪',      path: '/clip',      audioOnly: false, ...),
   NavDestination(label: 'H264 转码', path: '/transcode', audioOnly: false, ...),
   NavDestination(label: '视频分割',  path: '/split',     audioOnly: false, ...),
   NavDestination(label: '设置',      path: '/settings',  audioOnly: false, ...),
+  NavDestination(label: '音频',      path: '/audio',     audioOnly: true,  ...),
 ];
 
 List<NavDestination> get activeDestinations =>
     kAudioOnlyMode ? kNavDestinations.where((d) => d.audioOnly).toList() : kNavDestinations;
 ```
 
-**顺序约定**：音频页排在列表首位。这样 `activeDestinations.first.path` 在完整版下是 `/clip`（与现有 `initialLocation` 一致），在音频版下是 `/audio`，两种模式共用一个表达式，无需分支判断。每一项的 `icon` / `iconFilled` / `builder` 逐字搬移现有 `app_sidebar.dart` 的 `_navItems` 与 `app_router.dart` 的 `builder`，不改动任何图标与页面构造。
+**顺序约定**：`kNavDestinations` 的顺序**即完整版侧栏顺序**，音频页排在列表末尾。四项视频页签保持改造前的相对顺序（下标 0–3），音频页追加在末尾；`destinationsFor` 是**纯过滤**，不重排列表。这样 `activeDestinations.first.path` 在完整版下是 `/clip`（与现有 `initialLocation` 一致），在音频版下过滤后只剩音频一项、即 `/audio`，两种模式共用一个表达式，无需分支判断。每一项的 `icon` / `iconFilled` / `builder` 逐字搬移现有 `app_sidebar.dart` 的 `_navItems` 与 `app_router.dart` 的 `builder`，不改动任何图标与页面构造。
 
 `app_router.dart` 与 `app_sidebar.dart` **都**从 `activeDestinations` 构建，下标天然一致。
 

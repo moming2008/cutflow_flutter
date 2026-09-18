@@ -50,19 +50,12 @@ Widget _buildSplit(BuildContext context, GoRouterState state) =>
 Widget _buildSettings(BuildContext context, GoRouterState state) =>
     const SettingsScreen();
 
-/// 全量导航目标
+/// 全量导航目标（顺序即完整版侧栏顺序，音频页排在末尾）
 ///
-/// 音频页排在首位，使 `activeDestinations.first.path` 在音频版下为
-/// `/audio`、在完整版下为 `/clip`，两种模式共用一个初始路由表达式。
+/// 音频版下 [destinationsFor] 过滤后只剩音频一项，首项路径为 `/audio`；
+/// 完整版下首项为 `/clip`，与改造前的 initialLocation 一致。
+/// 两种模式共用 `activeDestinations.first.path` 作为初始路由表达式。
 const List<NavDestination> kNavDestinations = <NavDestination>[
-  NavDestination(
-    label: '音频',
-    icon: Icons.music_note_outlined,
-    iconFilled: Icons.music_note,
-    path: '/audio',
-    builder: _buildAudio,
-    audioOnly: true,
-  ),
   NavDestination(
     label: '裁剪',
     icon: Icons.content_cut_outlined,
@@ -95,24 +88,24 @@ const List<NavDestination> kNavDestinations = <NavDestination>[
     builder: _buildSettings,
     audioOnly: false,
   ),
+  NavDestination(
+    label: '音频',
+    icon: Icons.music_note_outlined,
+    iconFilled: Icons.music_note,
+    path: '/audio',
+    builder: _buildAudio,
+    audioOnly: true,
+  ),
 ];
 
 /// 按模式过滤导航目标（显式传参，便于对两种模式都做单测）
 ///
-/// 音频版：只保留 [NavDestination.audioOnly] 的目标，首项即 `/audio`。
-///
-/// 完整版：返回全量目标，但把音频页挪到末尾，使首项仍为 `/clip` —— 即
-/// `destinationsFor(audioOnly: false).first.path` 与改造前的 `initialLocation`
-/// 一致。这样切回完整版时视频侧页签的下标与启动页均无回归，
-/// `activeDestinations.first.path` 也仍是两种模式通用的初始路由表达式。
+/// 音频版只保留 [NavDestination.audioOnly] 的目标（首项 `/audio`）；
+/// 完整版原样返回 [kNavDestinations]（首项 `/clip`）。
+/// 本函数是纯过滤，不改变 [kNavDestinations] 的既有顺序。
 List<NavDestination> destinationsFor({required bool audioOnly}) {
-  if (audioOnly) {
-    return kNavDestinations.where((d) => d.audioOnly).toList();
-  }
-  return <NavDestination>[
-    ...kNavDestinations.where((d) => !d.audioOnly),
-    ...kNavDestinations.where((d) => d.audioOnly),
-  ];
+  if (!audioOnly) return kNavDestinations;
+  return kNavDestinations.where((d) => d.audioOnly).toList();
 }
 
 /// 当前模式下的导航目标

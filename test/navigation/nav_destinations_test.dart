@@ -4,10 +4,10 @@ import 'package:cutflow_flutter/navigation/nav_destinations.dart';
 
 void main() {
   group('导航目标过滤', () {
-    test('全量列表含 5 个目标，音频排在首位', () {
+    test('全量列表含 5 个目标，音频排在末位', () {
       expect(kNavDestinations.length, equals(5));
-      expect(kNavDestinations.first.path, equals('/audio'));
-      expect(kNavDestinations.first.audioOnly, isTrue);
+      expect(kNavDestinations.last.path, equals('/audio'));
+      expect(kNavDestinations.last.audioOnly, isTrue);
     });
 
     test('音频版只保留 audioOnly 目标，且首个路径为 /audio', () {
