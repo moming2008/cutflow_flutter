@@ -1,5 +1,9 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:cutflow_flutter/core/app_mode.dart';
+import 'package:cutflow_flutter/features/audio/audio_screen.dart';
+import 'package:cutflow_flutter/features/clip/clip_screen.dart';
+import 'package:cutflow_flutter/navigation/app_router.dart';
 import 'package:cutflow_flutter/navigation/nav_destinations.dart';
 
 void main() {
@@ -32,6 +36,31 @@ void main() {
       expect(activeDestinations.length, equals(kAudioOnlyMode ? 1 : 5));
       expect(activeDestinations.first.path,
           equals(kAudioOnlyMode ? '/audio' : '/clip'));
+    });
+  });
+
+  group('路由接线', () {
+    // 上面几组只断言 kNavDestinations / activeDestinations 这类**表达式**；
+    // 真正把「音频版启动落在 /audio」落到实处的，是 app_router.dart 里
+    // `initialLocation: activeDestinations.first.path` 这一行接线。
+    // 若把它硬编码回 '/clip'，上面 5 个断言依然全绿 —— 故此处直接渲染
+    // 真实 appRouter，验证启动落点。
+    testWidgets('音频版启动落在音频页（initialLocation 接线有效）', (tester) async {
+      await tester.pumpWidget(MaterialApp.router(routerConfig: appRouter));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AudioScreen), findsOneWidget);
+    });
+
+    testWidgets('音频版侧栏不含视频侧页签，且未落到裁剪页', (tester) async {
+      await tester.pumpWidget(MaterialApp.router(routerConfig: appRouter));
+      await tester.pumpAndSettle();
+
+      // 负面断言：视频侧页面不进侧栏、也不作为启动页
+      expect(find.byType(ClipScreen), findsNothing);
+      expect(find.text('裁剪'), findsNothing);
+      // 唯一的页签就是音频
+      expect(find.text('音频'), findsOneWidget);
     });
   });
 }

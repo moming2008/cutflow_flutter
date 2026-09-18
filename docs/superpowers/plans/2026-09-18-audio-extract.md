@@ -49,6 +49,16 @@
 
 ### Task 1: 模式开关 + 集中式导航目标 + 音频空壳页
 
+> **注意（2026-09-18 裁定 D7 取代本节原文）**：本节原文的 `kNavDestinations`
+> 把「音频」置于首位，与本节自身 test 3 及 spec §6.2 正文（完整版首项须为
+> `/clip`）矛盾。实际落地为**单一权威顺序 + 纯过滤**：`kNavDestinations`
+> 顺序即完整版侧栏顺序（裁剪/H264 转码/视频分割/设置 占 0–3，音频在末尾），
+> `destinationsFor` 完整版直接返回该表、音频版做 `where` 过滤。
+> 文中 test 1 的 `kNavDestinations.first.path == '/audio'` 断言亦已改为
+> `.last`，同义反复的 `bool.fromEnvironment` 断言已替换为
+> `expect(activeDestinations.length, equals(kAudioOnlyMode ? 1 : 5));`。
+> 详见 `.superpowers/sdd/2026-09-18-audio-extract/progress.md` 的裁定 D7。
+
 先跑通「启动落在 `/audio`、侧栏只有音频一项、不白屏」，后续任务再往里填功能。
 
 **Files:**
@@ -113,6 +123,10 @@ void main() {
   });
 }
 ```
+
+> ⚠️ 上列测试 1 的「音频排在首位」与 `first.path == '/audio'` 已被裁定 D7 取代：
+> 实际断言改为 `kNavDestinations.last.path == '/audio'`（音频置末）；末行的
+> `bool.fromEnvironment` 同义反复断言也一并替换。见本节开头注意事项。
 
 - [ ] **Step 2: 运行测试确认失败**
 
@@ -249,6 +263,10 @@ List<NavDestination> destinationsFor({required bool audioOnly}) {
 List<NavDestination> get activeDestinations =>
     destinationsFor(audioOnly: kAudioOnlyMode);
 ```
+
+> ⚠️ 本代码块中「音频」置于 `kNavDestinations` **首位**的写法已被裁定 D7 取代：
+> 实际实现把「音频」项移到**末位**（视频四项占下标 0–3，与改造前一致），
+> `destinationsFor` 恢复为纯过滤、不再重排列表。见本节开头注意事项。
 
 - [ ] **Step 5: 创建音频页空壳**
 
