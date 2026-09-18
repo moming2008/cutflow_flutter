@@ -214,18 +214,27 @@ class AudioViewModel extends StateNotifier<AudioState> {
     final info = await AudioMetadataProbe.probe(path);
     if (!mounted || state.sourcePath != path) return;
 
-    // 出点：默认拉到全片；回填重试时保留记录里的出点并按时长钳制。
-    // 探测不到有效时长（时长 0）时沿用原行为置 0。
-    final endMs = info.durationMs > 0
-        ? (keepTrimEndMs ?? info.durationMs).clamp(0, info.durationMs)
-        : 0;
-
     state = state.copyWith(
       sourceInfo: info,
       isProbing: false,
       sourceDurationMs: info.durationMs,
-      trimEndMs: endMs,
+      trimEndMs: resolveTrimEndMs(
+        durationMs: info.durationMs,
+        keepTrimEndMs: keepTrimEndMs,
+      ),
     );
+  }
+
+  /// 解析出点：默认取全片时长；[keepTrimEndMs] 非空时保留调用方给定值，
+  /// 但一律钳制在实际时长内（防源文件被替换成更短的版本）。
+  /// 探测不到时长（<= 0）时返回 0。
+  ///
+  /// 抽成纯函数是为了让「保留 / 钳制 / 兜底」三条规则可被单独断言：
+  /// `clamp` 的上下界一旦写反（`.clamp(durationMs, 0)`）照样能编译通过，
+  /// 只在运行时抛 `ArgumentError`，靠调用方无法察觉。
+  static int resolveTrimEndMs({required int durationMs, int? keepTrimEndMs}) {
+    if (durationMs <= 0) return 0;
+    return (keepTrimEndMs ?? durationMs).clamp(0, durationMs);
   }
 
   void setTrimStart(int ms) {

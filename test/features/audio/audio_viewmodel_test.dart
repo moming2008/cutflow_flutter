@@ -138,4 +138,60 @@ void main() {
       expect(next.targetBitrateKbps, equals(320));
     });
   });
+
+  // 出点解析是「默认全片 / 保留记录值 / 按时长钳制 / 无时长兜底」四条规则的
+  // 唯一实现，生产路径（_probeSource）调用的就是同一个函数。
+  group('出点解析 resolveTrimEndMs', () {
+    test('探测不到时长时返回 0', () {
+      expect(
+        AudioViewModel.resolveTrimEndMs(durationMs: 0),
+        equals(0),
+      );
+    });
+
+    test('无时长时兜底优先于保留值', () {
+      // 时长未知就不敢沿用记录里的出点，宁可置 0 交由校验拦截
+      expect(
+        AudioViewModel.resolveTrimEndMs(durationMs: 0, keepTrimEndMs: 5000),
+        equals(0),
+      );
+    });
+
+    test('不传保留值时默认取全片时长', () {
+      // 重新选文件的路径：出点必须回到全片
+      expect(
+        AudioViewModel.resolveTrimEndMs(durationMs: 180000),
+        equals(180000),
+      );
+    });
+
+    test('保留值在时长内时原样返回', () {
+      // 历史记录回填重试的路径：区间必须原样往返，不得被放宽
+      expect(
+        AudioViewModel.resolveTrimEndMs(
+          durationMs: 180000,
+          keepTrimEndMs: 165000,
+        ),
+        equals(165000),
+      );
+    });
+
+    test('保留值超出时长时向下钳制', () {
+      const durationMs = 120000;
+      final result = AudioViewModel.resolveTrimEndMs(
+        durationMs: durationMs,
+        keepTrimEndMs: 165000,
+      );
+
+      expect(result, equals(120000));
+      // 上面那个等值断言只说明「算出了 120000」。这里另外把钳制的**方向**
+      // 直接写出来：结果必须落在 [0, durationMs] 闭区间内。
+      // 若 clamp 的上下界写反成 .clamp(durationMs, 0)，本用例会因
+      // ArgumentError 失败，而等值断言单独存在时无法表达这层意图。
+      expect(result, lessThanOrEqualTo(durationMs));
+      expect(result, greaterThanOrEqualTo(0));
+      // 源文件被换成更短版本时，出点绝不能被留在时长之外
+      expect(result, isNot(greaterThan(durationMs)));
+    });
+  });
 }
