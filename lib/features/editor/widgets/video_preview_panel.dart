@@ -44,7 +44,11 @@ class VideoPreviewPanelState extends State<VideoPreviewPanel> {
   int get currentPositionMs => _currentPositionMs;
 
   /// 外部 seek 到指定毫秒
+  ///
+  /// 播放器尚未就绪（未创建 / 已释放）时静默忽略：
+  /// 音频页的区间滑块可能在探测完成后、播放器初始化前被拖动。
   void seekTo(int ms) {
+    if (!_playerInitialized) return;
     _player.seek(Duration(milliseconds: ms));
   }
 
@@ -73,7 +77,11 @@ class VideoPreviewPanelState extends State<VideoPreviewPanel> {
     // 快速连续切文件时后一次调用不能再次释放同一个实例
     if (_playerInitialized) {
       _playerInitialized = false;
-      await _player.dispose();
+      try {
+        await _player.dispose();
+      } catch (e) {
+        log('VideoPreview').w('Failed to dispose previous player', error: e);
+      }
     }
     if (token != _loadToken) return; // 期间又切了文件，本次作废
 
@@ -82,11 +90,14 @@ class VideoPreviewPanelState extends State<VideoPreviewPanel> {
     _currentPositionMs = 0;
 
     final file = File(widget.video.path);
-    if (!await file.exists()) {
+    final exists = await file.exists();
+    // 等待文件检查期间可能已被 dispose 或又切了文件，
+    // 此时继续往下走会创建出无人释放的 Player
+    if (!mounted || token != _loadToken) return;
+
+    if (!exists) {
       log('VideoPreview').e('File not found: ${widget.video.path}');
-      if (mounted && token == _loadToken) {
-        setState(() => _error = '视频文件不存在: ${widget.video.path}');
-      }
+      setState(() => _error = '视频文件不存在: ${widget.video.path}');
       return;
     }
 
@@ -97,6 +108,7 @@ class VideoPreviewPanelState extends State<VideoPreviewPanel> {
 
       // 监听播放位置变化
       _player.stream.position.listen((position) {
+        if (token != _loadToken) return; // 旧播放器的回调，忽略
         final ms = position.inMilliseconds;
         if (ms != _currentPositionMs) {
           _currentPositionMs = ms;
@@ -107,7 +119,7 @@ class VideoPreviewPanelState extends State<VideoPreviewPanel> {
       // 监听错误
       _player.stream.error.listen((error) {
         log('VideoPreview').e('Player error: $error');
-        if (mounted) {
+        if (mounted && token == _loadToken) {
           setState(() => _error = error);
         }
       });

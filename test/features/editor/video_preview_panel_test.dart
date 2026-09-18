@@ -50,6 +50,20 @@ void main() {
     expect(find.textContaining('/nope/a.mp4'), findsNothing);
   });
 
+  testWidgets('播放器未就绪时 seekTo 静默忽略（不抛异常）', (tester) async {
+    await _mountAndSettleIo(tester, _video('/nope/a.mp4', 'a.mp4'));
+    expect(find.textContaining('/nope/a.mp4'), findsOneWidget);
+
+    // 文件不存在 → 播放器从未创建。音频页的区间滑块可能在
+    // 探测完成后、播放器初始化前被拖动，此时 seekTo 不应崩溃。
+    final state = tester.state<VideoPreviewPanelState>(
+      find.byType(VideoPreviewPanel),
+    );
+    state.seekTo(1000);
+
+    expect(state.currentPositionMs, 0);
+  });
+
   testWidgets('同一路径重建不触发重复初始化', (tester) async {
     await _mountAndSettleIo(tester, _video('/nope/a.mp4', 'a.mp4'));
     expect(find.textContaining('/nope/a.mp4'), findsOneWidget);
