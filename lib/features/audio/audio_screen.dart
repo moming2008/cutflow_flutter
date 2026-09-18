@@ -1,17 +1,73 @@
 /// 音频提取页面
 ///
 /// 视频 → MP3，封装封面图与歌名/歌手/专辑 ID3 标签。
+/// 单页布局：上部表单区（预览 + 标签 + 区间 + 码率 + 输出），下部转换记录。
 library;
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:path/path.dart' as p;
 
+import '../../core/model/audio_task.dart';
+import '../../core/model/video_item.dart';
+import '../../core/services/explorer_service.dart';
 import '../../ui/theme/colors.dart';
+import '../editor/widgets/trim_range_control.dart';
+import '../editor/widgets/video_preview_panel.dart';
+import 'audio_viewmodel.dart';
+import 'widgets/audio_bitrate_selector.dart';
+import 'widgets/audio_record_tile.dart';
+import 'widgets/audio_tag_panel.dart';
 
-class AudioScreen extends StatelessWidget {
+/// 步进按钮每次移动的毫秒数（音频场景用秒级，不是帧级）
+const int kAudioStepMs = 1000;
+
+class AudioScreen extends ConsumerStatefulWidget {
   const AudioScreen({super.key});
 
   @override
+  ConsumerState<AudioScreen> createState() => _AudioScreenState();
+}
+
+class _AudioScreenState extends ConsumerState<AudioScreen> {
+  final _previewKey = GlobalKey<VideoPreviewPanelState>();
+
+  Future<void> _pickSourceFile() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.video,
+        allowMultiple: false,
+      );
+      final path = result?.files.firstOrNull?.path;
+      if (path != null) {
+        await ref.read(audioProvider.notifier).setSourceFile(path);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('选择文件失败: $e')));
+      }
+    }
+  }
+
+  Future<void> _pickOutputDirectory() async {
+    final dir = await FilePicker.platform.getDirectoryPath(
+      dialogTitle: '选择输出目录',
+    );
+    if (dir != null) {
+      ref.read(audioProvider.notifier).setOutputDirectory(dir);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final state = ref.watch(audioProvider);
+    final records = ref.watch(audioRecordsProvider);
+    final notifier = ref.read(audioProvider.notifier);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -22,13 +78,366 @@ class AudioScreen extends StatelessWidget {
             color: AppColors.textPrimary,
           ),
         ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: ElevatedButton.icon(
+              onPressed: state.isConverting ? null : _pickSourceFile,
+              icon: const Icon(Icons.folder_open, size: 18),
+              label: const Text('选择视频'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
-      body: const Center(
-        child: Text(
-          '音频提取页面',
-          style: TextStyle(fontSize: 13, color: AppColors.textTertiary),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                child: state.sourcePath == null
+                    ? _buildEmptyState()
+                    : _buildForm(state, notifier),
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Divider(height: 1, color: AppColors.divider),
+            const SizedBox(height: 8),
+            _buildRecords(records, notifier),
+          ],
         ),
       ),
     );
+  }
+
+  Widget _buildEmptyState() {
+    return Container(
+      height: 300,
+      alignment: Alignment.center,
+      child: const Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.music_note_outlined, size: 48, color: AppColors.textHint),
+          SizedBox(height: 12),
+          Text(
+            '选择一个视频开始提取音频',
+            style: TextStyle(fontSize: 13, color: AppColors.textTertiary),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildForm(AudioState state, AudioViewModel notifier) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 无音轨拦截条
+        if (state.sourceInfo != null && !state.sourceInfo!.hasAudio) ...[
+          _banner('该视频没有音频轨道，无法提取音频', AppColors.error),
+          const SizedBox(height: 12),
+        ],
+
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 预览区
+            Expanded(
+              flex: 3,
+              child: SizedBox(
+                height: 240,
+                child: _buildPreview(state),
+              ),
+            ),
+            const SizedBox(width: 16),
+            // 标签区
+            Expanded(
+              flex: 2,
+              child: AudioTagPanel(
+                title: state.title,
+                artist: state.artist,
+                album: state.album,
+                coverPath: state.coverPath,
+                enabled: !state.isConverting,
+                onTitleChanged: notifier.setTitle,
+                onArtistChanged: notifier.setArtist,
+                onAlbumChanged: notifier.setAlbum,
+                onCoverChanged: notifier.setCoverPath,
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 16),
+
+        // 区间选择（复用编辑器组件）
+        TrimRangeControl(
+          durationMs: state.sourceDurationMs,
+          trimStartMs: state.trimStartMs,
+          trimEndMs: state.trimEndMs,
+          currentPositionMs: 0,
+          frameRate: 0,
+          stepBackwardLabel: '快退 1s',
+          stepForwardLabel: '快进 1s',
+          onSetStart: () => notifier
+              .setTrimStart(_previewKey.currentState?.currentPositionMs ?? 0),
+          onSetEnd: () => notifier
+              .setTrimEnd(_previewKey.currentState?.currentPositionMs ?? 0),
+          onTrimStartManualChanged: notifier.setTrimStart,
+          onTrimEndManualChanged: notifier.setTrimEnd,
+          onSliderChanged: (ms) => _previewKey.currentState?.seekTo(ms.round()),
+          onStepBackward: () => notifier.stepStart(-kAudioStepMs),
+          onStepForward: () => notifier.stepStart(kAudioStepMs),
+        ),
+
+        const SizedBox(height: 16),
+
+        AudioBitrateSelector(
+          sourceInfo: state.sourceInfo,
+          targetBitrateKbps: state.targetBitrateKbps,
+          enabled: !state.isConverting,
+          onChanged: notifier.setTargetBitrate,
+        ),
+
+        const SizedBox(height: 12),
+
+        // 输出路径
+        Row(
+          children: [
+            const SizedBox(
+              width: 60,
+              child: Text('输出到',
+                  style: TextStyle(fontSize: 12, color: AppColors.textTertiary)),
+            ),
+            Expanded(
+              child: Container(
+                height: 36,
+                alignment: Alignment.centerLeft,
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceVariant,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: AppColors.outline),
+                ),
+                child: Text(
+                  state.outputDirectory == null
+                      ? '未设置输出目录'
+                      : p.join(state.outputDirectory!, state.outputFileName),
+                  style: const TextStyle(
+                      fontSize: 12, color: AppColors.textSecondary),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            OutlinedButton(
+              onPressed: state.isConverting ? null : _pickOutputDirectory,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                side: const BorderSide(color: AppColors.primary),
+                textStyle: const TextStyle(fontSize: 12),
+              ),
+              child: const Text('更改'),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 16),
+
+        if (state.error != null) ...[
+          _banner(state.error!, AppColors.error),
+          const SizedBox(height: 12),
+        ],
+        if (state.success != null) ...[
+          _banner(state.success!, AppColors.success),
+          const SizedBox(height: 12),
+        ],
+
+        // 进度
+        if (state.isConverting) ...[
+          Row(
+            children: [
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: state.progress / 100,
+                    backgroundColor: AppColors.outline,
+                    valueColor:
+                        const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                    minHeight: 8,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text('${state.progress}%',
+                  style: const TextStyle(
+                      fontSize: 13, color: AppColors.textPrimary)),
+            ],
+          ),
+          const SizedBox(height: 8),
+        ],
+
+        // 开始 / 取消
+        SizedBox(
+          width: double.infinity,
+          height: 44,
+          child: ElevatedButton.icon(
+            onPressed: state.isConverting
+                ? () => notifier.cancelConversion()
+                : (state.canConvert ? () => notifier.startConversion() : null),
+            icon: state.isConverting
+                ? const Icon(Icons.stop, size: 18)
+                : state.isProbing
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Icon(Icons.music_note, size: 18),
+            label: Text(state.isConverting
+                ? '取消转换'
+                : state.isProbing
+                    ? '探测中…'
+                    : '开始转换'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: state.isConverting
+                  ? AppColors.error
+                  : (state.canConvert ? AppColors.primary : AppColors.outline),
+              foregroundColor: state.isConverting || state.canConvert
+                  ? Colors.white
+                  : AppColors.textTertiary,
+              shape:
+                  RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPreview(AudioState state) {
+    // VideoPreviewPanel 需要 VideoItem；这里用最小字段构造，
+    // 音频场景不关心分辨率/编码，只用到 path/name/duration。
+    final video = VideoItem(
+      id: 0,
+      path: state.sourcePath!,
+      name: state.sourceName ?? p.basename(state.sourcePath!),
+      duration: state.sourceDurationMs,
+      width: 0,
+      height: 0,
+      fileSize: 0,
+      frameRate: 0,
+      codec: '',
+      importedAt: 0,
+    );
+
+    return VideoPreviewPanel(
+      key: _previewKey,
+      video: video,
+      onPositionChanged: (_) {},
+    );
+  }
+
+  Widget _banner(String message, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.info_outline, size: 18, color: color),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(message,
+                style:
+                    const TextStyle(fontSize: 12, color: AppColors.textPrimary)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecords(
+    AsyncValue<List<AudioTask>> records,
+    AudioViewModel notifier,
+  ) {
+    return SizedBox(
+      height: 180,
+      child: records.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(
+          child: Text('读取记录失败: $e',
+              style: const TextStyle(fontSize: 12, color: AppColors.error)),
+        ),
+        data: (tasks) {
+          if (tasks.isEmpty) {
+            return const Center(
+              child: Text('暂无转换记录',
+                  style: TextStyle(fontSize: 12, color: AppColors.textTertiary)),
+            );
+          }
+          return ListView.separated(
+            itemCount: tasks.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            itemBuilder: (context, index) {
+              final task = tasks[index];
+              final outputPath = task.outputPath;
+              return AudioRecordTile(
+                task: task,
+                fileExists: outputPath != null && File(outputPath).existsSync(),
+                onOpen: () {
+                  if (outputPath != null) {
+                    ExplorerService.openFileLocation(outputPath);
+                  }
+                },
+                onRetry: () => notifier.restoreFromTask(task),
+                onDelete: () => _confirmDelete(task, notifier),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _confirmDelete(AudioTask task, AudioViewModel notifier) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('删除记录', style: TextStyle(fontSize: 16)),
+        content: Text(
+          '将删除这条记录${task.outputPath != null ? '，并删除已生成的 mp3 文件' : ''}。确定吗？',
+          style: const TextStyle(fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child:
+                const Text('删除', style: TextStyle(color: AppColors.error)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    await notifier.deleteRecord(task);
   }
 }

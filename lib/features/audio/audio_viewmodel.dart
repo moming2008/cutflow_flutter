@@ -339,7 +339,7 @@ class AudioViewModel extends StateNotifier<AudioState> {
       }
 
       // 4. 输出路径去重
-      final outputPath = await _resolveOutputPath(outputDir, state.outputFileName);
+      final outputPath = await resolveOutputPath(outputDir, state.outputFileName);
 
       // 5. 入库（状态 PENDING）
       final taskId = await _repository.insertTask(AudioTask(
@@ -505,6 +505,15 @@ class AudioViewModel extends StateNotifier<AudioState> {
     unawaited(_probeSource(task.sourcePath, keepTrimEndMs: task.trimEndMs));
   }
 
+  /// 删除一条记录，并尽力删除其产物文件
+  ///
+  /// 文件删除失败只记日志、不阻断记录删除——文件可能已被用户手动移走或占用，
+  /// 卡住记录删除反而更糟。
+  Future<void> deleteRecord(AudioTask task) async {
+    await _deleteFileQuietly(task.outputPath);
+    await _repository.deleteTask(task.id);
+  }
+
   Future<void> _handleFailure({
     required int taskId,
     required String outputPath,
@@ -546,7 +555,12 @@ class AudioViewModel extends StateNotifier<AudioState> {
   }
 
   /// 输出路径去重：重名时追加 _1 / _2 …
-  Future<String> _resolveOutputPath(String dir, String fileName) async {
+  ///
+  /// 抽成公开静态函数（与 [resolveTrimEndMs] 同样的理由）：去重规则只在
+  /// 「同名文件已存在」时才会生效，而从外部驱动一次真实转换必须启动 ffmpeg，
+  /// 规则一旦出错（计数初值写错、重名时直接返回原路径）就没有任何可在测试中
+  /// 观察到的出口。生产路径（[startConversion] 第 4 步）调用的就是这个函数。
+  static Future<String> resolveOutputPath(String dir, String fileName) async {
     var candidate = p.join(dir, fileName);
     if (!await File(candidate).exists()) return candidate;
 
