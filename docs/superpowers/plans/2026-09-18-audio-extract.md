@@ -23,6 +23,8 @@
 - **不新增任何依赖**：仅使用现有 `flutter_riverpod` / `drift` / `go_router` / `media_kit` / `file_picker` / `desktop_drop` / `path` / `equatable` / `uuid` / `logger`。
 - **ID3 版本固定为 `-id3v2_version 3`**（v2.3），不可改为 2.4 —— Windows 资源管理器与车机对 v2.4 支持差。
 - **封面固定重编码为 JPEG**（`-c:v mjpeg`），最长边限 **600px 且不放大**（`scale=w=min(600\,iw):h=-2`）。
+  - ⚠️ **该滤镜字符串已被裁定 D32 取代，不要照抄**：`…:h=-2` 只限制**宽度**而非最长边，`h=-2` 由已限宽的宽度反推高度，故任何竖版封面（h > w）的长边都会超出 600 —— 实测 1080×1920 → **600×1066**。对手机竖拍视频为主的素材而言这是**常见情况**，600px 上限的兼容性理由恰在此失效。
+  - 实际落地为：`scale=w=min(600\,iw):h=min(600\,ih):force_original_aspect_ratio=decrease`。实测对照：竖版 1080×1920 → 338×600（旧 600×1066）；横版 1920×1080 → 600×338（不变）；方形 1000×1000 → 600×600（不变）。反斜杠转义仍必须保留。详见台账 D32/D34。
 - **数据库 `schemaVersion` 由 2 升至 3**；视频侧五张表（`VideoItems` / `ExportTasks` / `CropPresets` / `EditorDrafts` / `AppSettings`）的**列定义逐字不改**。
 - **视频侧代码一律保留**，不删除、不标注 `@Deprecated`；`kAudioOnlyMode` 默认 `true`，改回 `false` 必须完整恢复原版。
 - **音频表与视频表物理同库、逻辑隔离**：同一个 `cutflow.db` 文件，独立表 + 独立 Repository。
@@ -2009,6 +2011,8 @@ void main() {
     });
 
     test('封面缩放滤镜限制最长边 600 且不放大', () {
+      // ⚠️ 裁定 D32 取代：下面的期望值只限宽不限长边，竖版封面会漏（实测 1080×1920 → 600×1066）。
+      //    实际落地断言的是 r'scale=w=min(600\,iw):h=min(600\,ih):force_original_aspect_ratio=decrease'
       expect(_valueOf(args, '-vf'), equals(r'scale=w=min(600\,iw):h=-2'));
     });
 
@@ -2186,6 +2190,9 @@ class FilenameSanitizer {
     if (hasCover) {
       args.addAll([
         '-c:v', 'mjpeg', // 统一重编码为 JPEG（MP3 APIC 只认 JPEG/PNG）
+        // ⚠️ 裁定 D32 取代：实际落地为
+        //    r'scale=w=min(600\,iw):h=min(600\,ih):force_original_aspect_ratio=decrease'
+        //    下面的字符串只限宽，竖版封面不受 600 上限约束。
         '-vf', r'scale=w=min(600\,iw):h=-2', // 最长边 600，不放大
         '-q:v', '3',
         '-disposition:v', 'attached_pic',
