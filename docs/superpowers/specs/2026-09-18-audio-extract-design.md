@@ -92,12 +92,13 @@ AudioScreen ─→ AudioViewModel ─→ AudioRepository ─→ AppDatabase
 - **`TimeFormatter`**：时间码格式化与解析语义。
 - **`FilePicker`**：选视频文件、选封面图片（沿用 `file_picker` 依赖，不新增包）。
 
-### 复用点的两处适配（需小幅改动共享组件）
+### 复用点的三处适配（需小幅改动共享组件）
 
 | 组件 | 改动 | 理由 |
 |---|---|---|
 | `TrimRangeControl` | 新增两个**可选**参数 `stepBackwardLabel` / `stepForwardLabel`，默认值保持现有文案「逐帧向前」「逐帧向后」 | 音频场景下「逐帧」无意义，需要显示为「快退 1s」「快进 1s」。可选参数默认值不变，现有调用方零感知 |
 | `TrimRangeControl` | 调用时传 `frameRate: 0` | 组件内部**从未使用** `frameRate`（仅声明未引用），传 0 无影响；步进逻辑由 ViewModel 实现为 ±1000ms |
+| `VideoPreviewPanel` | 补实现 `didUpdateWidget`：`video.path` 变化时重建播放器；`_player` 由 `late final` 改为 `late` 以便释放旧实例；加 `_loadToken` 防止快速切换时的异步竞态 | **勘察发现的既有缺陷**：该组件未实现 `didUpdateWidget`，换视频文件时 `initState` 不会重跑，预览不刷新。音频页需反复换文件，不修则功能不可用。同时修掉 `dispose()` 在从未初始化时抛 `LateInitializationError` 的隐患 |
 
 ---
 
@@ -237,7 +238,9 @@ static List<String> buildExtractMp3({
 
 `TranscodeViewModel` 传入的 `totalDurationMs` 是**源视频总时长**——因为它不做裁剪，这是对的。音频这里**必须传 `trimEndMs - trimStartMs`（输出时长）**，因为 `-ss` 输入 seek 后 ffmpeg 的 `time=` 从 0 起算。
 
-该值是正确基准的推演结论，**实现时需用真实素材实测校准**（不同 ffmpeg 版本对 seek 后时间戳的处理存在差异）。校准方法：转一个已知时长的区间，观察进度条能否在结束时到达 100%。若实测发现 `time=` 仍以源时间轴计，则改回传 `trimEndMs`。
+**这一做法在代码库中已有先例**：`ExportService._processTask()` 计算 `final trimDuration = task.trimEndMs - task.trimStartMs;` 并作为 `totalDurationMs` 传入，与裁剪工作流（`editor_form_panel` / `buildTrimAndCrop`）配合正常。音频沿用同一基准，与既有实现保持一致。
+
+仍需**用真实素材实测校准**（不同 ffmpeg 版本对 seek 后时间戳的处理存在差异）。校准方法：转一个已知时长的区间，观察进度条能否在结束时到达 100%。若实测发现 `time=` 仍以源时间轴计，则改回传 `trimEndMs`。
 
 ### 4.4 输出路径与命名
 
@@ -379,7 +382,7 @@ const bool kAudioOnlyMode = true;   // ← 一个常量切换完整版 / 音频�
 | 输出目录不可写 | 转换前 `Directory.exists()` / 创建，失败则 `FAILED` + 明确路径 |
 | 输出文件被占用（Windows 常见） | ffmpeg exitCode≠0 → `FAILED` + 「输出文件可能被其他程序占用，请关闭后重试」 |
 | ffmpeg 未安装 | 沿用 `FfmpegEngine` 现有处理（「FFmpeg not found」） |
-| 转换中用户取消 | `FfmpegEngine.cancel()` 杀进程；任务回 `PENDING`、progress 归零、删除半成品文件 |
+| 转换中用户取消 | `FfmpegEngine.cancel()` 杀进程；**删除半成品 mp3 文件 + 删除该任务记录**（不留 PENDING 残留） |
 | 标签含换行/首尾空格 | 写入前规整（见 4.2） |
 | 歌名含 Windows 非法字符 | 文件名清洗（见 4.4），但 **ID3 标签保留原样**（只清文件名，不清标签） |
 
@@ -426,12 +429,13 @@ const bool kAudioOnlyMode = true;   // ← 一个常量切换完整版 / 音频�
 - [ ] 选一个有音轨的视频 → 源码率正确显示 → 填三个标签 + 选一张 JPG 封面 → 转出的 mp3 用 `ffprobe -show_format -show_streams` 验回 title/artist/album 三项 + 存在 `attached_pic` 视频流
 - [ ] **Windows 资源管理器**能看到封面缩略图（这是 ID3v2.3 决策的核心验证点）
 - [ ] 在预览窗口拖动进度条调区间 → 入/出点同步更新 → 时间码输入框手动改 → 进度条高亮同步
+- [ ] 选视频 A → 播放几秒 → 再选视频 B → 预览正确切到 B（不残留 A、不崩溃）；快速连切 3 个文件最终停在第 3 个
 - [ ] 「快退 1s」「快进 1s」按 1 秒步进，不是按帧
 - [ ] 不选封面转换 → mp3 无封面流，标签正常
 - [ ] 标签全部留空转换 → 无 ID3 标签，文件名用源名
 - [ ] 歌名填 `AC/DC: Live` → 文件名被清洗，但 mp3 内的 title 标签**保持原样**
 - [ ] 选一个纯音频无音轨的异常文件（如静音视频/纯图）→ 错误条正确提示且按钮禁用
-- [ ] 转换中途点取消 → 进程被杀、半成品文件被清理、任务回 PENDING
+- [ ] 转换中途点取消 → 进程被杀、半成品文件被清理、历史列表不留该条记录
 - [ ] 转换完成 → 记录列表出现 → 「打开」正确定位文件 → 删除时二次确认
 - [ ] 关闭 App 重开 → 记录列表仍在（持久化生效）
 - [ ] 侧栏**只有「音频」一项**，启动落在 `/audio` 不白屏
@@ -447,7 +451,7 @@ const bool kAudioOnlyMode = true;   // ← 一个常量切换完整版 / 音频�
 | **导航下标错位** | 抽 `nav_destinations.dart` 集中定义，router 与 sidebar 共用同一列表，从结构上消除下标耦合 |
 | **初始路由白屏** | 音频版初始路由取 `activeDestinations.first.path` 而非硬编码 `/clip`；列入验收清单 |
 | **进度基准判断可能有偏差** | `-ss` 输入 seek 后 `time=` 起算点的推演需实测校准，已在 4.3 写明校准方法与回退方案 |
-| **共享组件改动** | `TrimRangeControl` 仅新增两个带默认值的可选参数，现有调用方（`editor_form_panel`、split 设计侧）零感知 |
+| **共享组件改动** | `TrimRangeControl` 仅新增两个带默认值的可选参数，现有调用方（`editor_form_panel`、split 设计侧）零感知。`VideoPreviewPanel` 的 `didUpdateWidget` 补实现是行为修复：既有调用方（`EditorDialog`）每次只加载一个视频、不换文件，不受影响 |
 | **libmp3lame 可用性** | `libmp3lame` 是 ffmpeg 默认编译项，主流 Windows/Android 构建均包含；仅在极简构建中缺失，届时 ffmpeg 会明确报「Unknown encoder」 |
 | **拉回 `main` 的合并成本** | 纯新增文件为主；对现有文件的改动集中在 `app_database.dart`（加表+迁移）、`command_builder.dart`（加方法）、`app_router.dart` / `app_sidebar.dart`（改为读集中定义）、`trim_range_control.dart`（加可选参数）四处，`kAudioOnlyMode` 默认值在合并时改为 `false` 即可 |
 | **不引入新依赖** | 全部基于现有 `flutter_riverpod` / `drift` / `media_kit` / `file_picker` / 系统 ffmpeg+ffprobe |
