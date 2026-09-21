@@ -13,6 +13,23 @@ import '../model/audio_source_info.dart';
 import '../util/logger.dart';
 
 class AudioMetadataProbe {
+  /// 构建 ffprobe 参数
+  ///
+  /// 抽为独立方法是为了让「命令请求的字段」可被测试断言 —— 见测试中
+  /// 「探测命令与解析器的字段契约」一组：命令请求的字段必须覆盖
+  /// [parseFfprobeJson] 实际读取的每一个字段，否则解析器会静默匹配不到音轨。
+  static List<String> buildProbeArgs(String filePath) => [
+        '-v', 'error',
+        '-select_streams', 'a:0',
+        // codec_type 必须请求：parseFfprobeJson 靠它判定哪条流是音轨。
+        // 漏掉它会让解析器永远匹配不到音轨，任何视频都报「没有音频轨道」。
+        '-show_entries',
+        'stream=codec_type,bit_rate,codec_name,channels,sample_rate',
+        '-show_entries', 'format=duration,bit_rate',
+        '-of', 'json',
+        filePath,
+      ];
+
   /// 探测指定文件的音轨信息
   ///
   /// 找不到 ffprobe、进程失败或 JSON 非法时返回 [AudioSourceInfo.noAudio]，
@@ -25,14 +42,7 @@ class AudioMetadataProbe {
         return AudioSourceInfo.noAudio;
       }
 
-      final result = await Process.run(ffprobePath, [
-        '-v', 'error',
-        '-select_streams', 'a:0',
-        '-show_entries', 'stream=bit_rate,codec_name,channels,sample_rate',
-        '-show_entries', 'format=duration,bit_rate',
-        '-of', 'json',
-        filePath,
-      ]);
+      final result = await Process.run(ffprobePath, buildProbeArgs(filePath));
 
       if (result.exitCode != 0) {
         log('AudioProbe')
