@@ -118,6 +118,39 @@ void main() {
     });
   });
 
+  group('声道选择', () {
+    // 单声道源（手机录屏的麦克风音轨）转出的 MP3 也是单声道，
+    // 在部分车机/蓝牙设备上只从一个声道出声。默认强制立体声（-ac 2），
+    // 保留「跟随源」给在意同码率下保真度的用户。
+    // 采样率刻意不提供选项：向上重采样不会增加音质，44.1kHz 是 MP3 最标准率。
+
+    List<String> build({bool? forceStereo}) {
+      // forceStereo 为 null 表示「不传参数」本身，用于断言缺省行为
+      final forceStereoArg = forceStereo;
+      return FfmpegCommandBuilder.buildExtractMp3(
+        inputPath: '/in/video.mp4',
+        outputPath: '/out/song.mp3',
+        startMs: 0,
+        endMs: 60000,
+        targetBitrateKbps: 256,
+        if (forceStereoArg != null) forceStereo: forceStereoArg,
+      );
+    }
+
+    test('forceStereo 为 true 时加 -ac 2', () {
+      expect(_valueOf(build(forceStereo: true), '-ac'), equals('2'));
+    });
+
+    test('forceStereo 为 false 时不加 -ac（跟随源）', () {
+      expect(build(forceStereo: false).contains('-ac'), isFalse);
+    });
+
+    test('缺省时不加 -ac（历史行为不变）', () {
+      // 上面 setUp 里的旧调用点都不传该参数，必须保持原行为
+      expect(build(forceStereo: null).contains('-ac'), isFalse);
+    });
+  });
+
   group('标签值规整', () {
     test('换行折为空格、去首尾空格', () {
       expect(FfmpegCommandBuilder.normalizeTagValue('  晴天\nLive  '),

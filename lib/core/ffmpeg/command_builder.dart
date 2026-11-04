@@ -189,12 +189,18 @@ class FfmpegCommandBuilder {
   ///
   /// [startMs]/[endMs] 为提取区间；[coverPath] 为空则不嵌入封面；
   /// 三个标签为 null/空白时不写入对应 ID3 字段。
+  ///
+  /// [forceStereo] 为 true 时加 `-ac 2`：单声道源（手机录屏的麦克风音轨）
+  /// 在部分车机/蓝牙设备上只从一个声道出声，复制为双声道解决兼容性。
+  /// 注意这是**复制**声道，不增加信息；同码率下 mono 编码的保真度其实略高，
+  /// 故保留 false（跟随源）。缺省 false = 历史行为。
   static List<String> buildExtractMp3({
     required String inputPath,
     required String outputPath,
     required int startMs,
     required int endMs,
     required int targetBitrateKbps,
+    bool forceStereo = false,
     String? coverPath,
     String? title,
     String? artist,
@@ -205,7 +211,8 @@ class FfmpegCommandBuilder {
     final hasCover = coverPath != null && coverPath.isNotEmpty;
 
     log('CmdBuilder').d('buildExtractMp3: start=$startTime, '
-        'duration=${duration}ms, bitrate=${targetBitrateKbps}k, cover=$hasCover');
+        'duration=${duration}ms, bitrate=${targetBitrateKbps}k, '
+        'forceStereo=$forceStereo, cover=$hasCover');
 
     final args = <String>[
       '-y',
@@ -227,6 +234,12 @@ class FfmpegCommandBuilder {
       '-c:a', 'libmp3lame',
       '-b:a', '${targetBitrateKbps}k',
     ]);
+
+    // 源已是立体声时 -ac 2 是无害的直通；5.1 源则被下混为立体声（期望行为）。
+    // 采样率刻意不动：向上重采样不增加音质，44.1kHz 是 MP3 最标准率。
+    if (forceStereo) {
+      args.addAll(['-ac', '2']);
+    }
 
     if (hasCover) {
       args.addAll([
